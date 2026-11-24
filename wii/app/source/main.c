@@ -38,7 +38,7 @@ static int loadSpr(Spr *s, const char *name) {
 static int tick;   /* frame counter for the AUTOTEST build, which fakes input so Dolphin can run headless */
 static u32 btnDown(void) {
 #ifdef AUTOTEST
-    if (tick == 60 || tick == 125 || tick == 135 || tick == 145 || tick == 155 || tick == 165 || tick == 175 || tick == 185 || tick == 195 || tick == 205 || tick == 215 || tick == 225 || tick == 235 || tick == 245) return WPAD_BUTTON_DOWN; if (tick == 90 || tick == 120 || tick == 130 || tick == 140 || tick == 150 || tick == 160 || tick == 170 || tick == 180 || tick == 190 || tick == 200 || tick == 210 || tick == 220 || tick == 230 || tick == 240 || tick == 250) return WPAD_BUTTON_A; if (tick == 260) return WPAD_BUTTON_B; if (tick == 270) return WPAD_BUTTON_UP;   /* shop: select, open, buy, close, back to START */
+    if (tick == 60 || tick == 125 || tick == 135 || tick == 145 || tick == 155 || tick == 165 || tick == 175 || tick == 185 || tick == 195 || tick == 205 || tick == 215 || tick == 225 || tick == 235 || tick == 245 || tick == 255 || tick == 265) return WPAD_BUTTON_DOWN; if (tick == 90 || tick == 120 || tick == 130 || tick == 140 || tick == 150 || tick == 160 || tick == 170 || tick == 180 || tick == 190 || tick == 200 || tick == 210 || tick == 220 || tick == 230 || tick == 240 || tick == 250 || tick == 260 || tick == 270) return WPAD_BUTTON_A; if (tick == 280) return WPAD_BUTTON_B; if (tick == 290) return WPAD_BUTTON_UP;   /* shop: select, open, buy, close, back to START */
     return (tick == 420 || (tick > 420 && tick % 600 == 90)) ? WPAD_BUTTON_A : (tick % 600 == 300 || tick % 600 == 480) ? WPAD_BUTTON_PLUS : 0;   /* start / restart / pause / resume */
 #else
     return INPUT_ButtonsDown();
@@ -297,18 +297,18 @@ static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; 
     {1, 32, 32, 32, 32, 0, 0, 0, 0, 0, "drb.spr"},   /* 12: Dragon, drawn from the parts below (no pick table entry of its own) */
     {1, 64, 64, 64, 64, 0, 0, 0, 0, 0, "drh.spr"}, {1, 32, 32, 32, 32, 0, 0, 0, 0, 0, "drb.spr"}, {4, 32, 32, 128, 32, 0, 0, 0, 0, 0, "drf.spr"} };   /* 13 head, 14 body, 15 flap: real sprites, my own layout (offsets live in native code) */   /* Jetski: one static 64x32 frame, no rider or handle; Hog-like physics (guess) */   /* Sleigh: real 4x2 animation sheet, reindeer not drawn; Hog-like physics (guess) */   /* Starship: one static frame; Hog-like physics (guess) */   /* DeLorean: one static frame; Hog-like physics (guess) */   /* Ecto-1: one static frame, no rider; Hog-like physics (guess) */   /* Ice Skates: real 4x4 sheet, rider baked in; Hog-like physics (guess) */   /* Hoverboard: sheet is a real 4x3 grid with the rider baked in; the physics are the Hog's, a guess */   /* Teleporter: press = vanish and reappear at a random height; sheet is real, timings are mine */   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
 static const int vpick[16] = {6, 1, 13, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static int gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, gFM, gIcy, gDog;   /* shop: Coin Magnet owned (third number in save.txt) */
+static int gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, gFM, gIcy, gDog, gTM, gTG;   /* shop: Coin Magnet owned (third number in save.txt) */
 static void loadSave(int *best, int *total) {   /* save.txt: best distance, lifetime coins */
     char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
-    int b = 0, t = 0, m = 0; if (fscanf(f, "%d %d %d", &b, &t, &m) >= 2 && b >= 0 && t >= 0) { *best = b; *total = t; gMagnet = m & 1; gSlow = m >> 1 & 1; gDud = m >> 2 & 1; gVMag = m >> 3 & 1; gRub = m >> 4 & 1; gMul = m >> 5 & 1; gVS = m >> 6 & 1; gGB = m >> 7 & 1; gDZ = m >> 8 & 1; gXR = m >> 9 & 1; gBR = m >> 10 & 1; gFM = m >> 11 & 1; gIcy = m >> 12 & 1; gDog = m >> 13 & 1; } fclose(f);
+    int b = 0, t = 0, m = 0; if (fscanf(f, "%d %d %d", &b, &t, &m) >= 2 && b >= 0 && t >= 0) { *best = b; *total = t; gMagnet = m & 1; gSlow = m >> 1 & 1; gDud = m >> 2 & 1; gVMag = m >> 3 & 1; gRub = m >> 4 & 1; gMul = m >> 5 & 1; gVS = m >> 6 & 1; gGB = m >> 7 & 1; gDZ = m >> 8 & 1; gXR = m >> 9 & 1; gBR = m >> 10 & 1; gFM = m >> 11 & 1; gIcy = m >> 12 & 1; gDog = m >> 13 & 1; gTM = m >> 14 & 1; gTG = m >> 15 & 1; } fclose(f);
 }
-#define NSHOP 14
-static const char *const shopName[NSHOP] = {"COIN MAGNET", "SLOW MISSILES", "DUD MISSILES", "VEHICLE MAGNET", "RUBBER BONES", "COIN MULTIPLIER", "VEHICLE START", "GRAVITY BELT", "DUD ZAPPERS", "X-RAY SPECS", "BRICK BONES", "FRUIT MISSILES", "ICY EXTERIOR", "ROBOT DOG"};
-static const char *const shopDesc[NSHOP] = {"PULLS IN NEARBY COINS", "MISSILES FLY SLOWER", "FIRST 3 MISSILES ARE DUDS", "VEHICLES ATTRACT COINS", "BOUNCE FURTHER WHEN HIT", "EVERY COIN COUNTS DOUBLE", "BEGIN EACH RUN IN A VEHICLE", "LESS VERTICAL SPEED", "FIRST ZAPPER IS A DUD", "VEHICLE CRATES COME SOONER", "HEAVY THUD WHEN HIT", "DODGED MISSILES PAY 3 COINS", "SLIDE FURTHER WHEN HIT", "A DOG GRABS GROUND COINS"};
-static const int shopPrice[NSHOP] = {500, 400, 450, 600, 350, 700, 800, 450, 500, 500, 300, 400, 350, 600};   /* prices are mine; the APK has none */
-static int *const shopOwn[NSHOP] = {&gMagnet, &gSlow, &gDud, &gVMag, &gRub, &gMul, &gVS, &gGB, &gDZ, &gXR, &gBR, &gFM, &gIcy, &gDog};
+#define NSHOP 16
+static const char *const shopName[NSHOP] = {"COIN MAGNET", "SLOW MISSILES", "DUD MISSILES", "VEHICLE MAGNET", "RUBBER BONES", "COIN MULTIPLIER", "VEHICLE START", "GRAVITY BELT", "DUD ZAPPERS", "X-RAY SPECS", "BRICK BONES", "FRUIT MISSILES", "ICY EXTERIOR", "ROBOT DOG", "TOKEN MAGNET", "TOKEN GIFT"};
+static const char *const shopDesc[NSHOP] = {"PULLS IN NEARBY COINS", "MISSILES FLY SLOWER", "FIRST 3 MISSILES ARE DUDS", "VEHICLES ATTRACT COINS", "BOUNCE FURTHER WHEN HIT", "EVERY COIN COUNTS DOUBLE", "BEGIN EACH RUN IN A VEHICLE", "LESS VERTICAL SPEED", "FIRST ZAPPER IS A DUD", "VEHICLE CRATES COME SOONER", "HEAVY THUD WHEN HIT", "DODGED MISSILES PAY 3 COINS", "SLIDE FURTHER WHEN HIT", "A DOG GRABS GROUND COINS", "TOKENS ARE EASIER TO GRAB", "TOKENS PAY TRIPLE"};
+static const int shopPrice[NSHOP] = {500, 400, 450, 600, 350, 700, 800, 450, 500, 500, 300, 400, 350, 600, 500, 500};   /* prices are mine; the APK has none */
+static int *const shopOwn[NSHOP] = {&gMagnet, &gSlow, &gDud, &gVMag, &gRub, &gMul, &gVS, &gGB, &gDZ, &gXR, &gBR, &gFM, &gIcy, &gDog, &gTM, &gTG};
 static void writeSave(int best, int total) {
-    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d %d\n", best, total, gMagnet | gSlow << 1 | gDud << 2 | gVMag << 3 | gRub << 4 | gMul << 5 | gVS << 6 | gGB << 7 | gDZ << 8 | gXR << 9 | gBR << 10 | gFM << 11 | gIcy << 12 | gDog << 13); fclose(f);
+    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d %d\n", best, total, gMagnet | gSlow << 1 | gDud << 2 | gVMag << 3 | gRub << 4 | gMul << 5 | gVS << 6 | gGB << 7 | gDZ << 8 | gXR << 9 | gBR << 10 | gFM << 11 | gIcy << 12 | gDog << 13 | gTM << 14 | gTG << 15); fclose(f);
 }
 static int mflip;   /* draw the next vehicle quad upside down (Gravity Suit on the ceiling) */
 static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h = drawn height; width keeps the frame's aspect */
@@ -349,15 +349,16 @@ int main(int argc, char **argv) {
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
-    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
+    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0; float tokX = 0, tokY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
+    Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
     Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, zDud = 0, zapDudLeft = 0, bossHp = 3, bossCd = 0, bossKills = 0, boomDone = 0, boomHit = 0, newBest = 0;
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
-    Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
+    Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
 #ifdef AUTOTEST
-    total = 12000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0;
+    total = 14000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0; gTM = 0; gTG = 0;
 #endif
     for (;;) {
         INPUT_Update(); tick++;
@@ -426,7 +427,7 @@ int main(int argc, char **argv) {
         }
         if (dead) { if (--dead == 0) { state = 2; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
@@ -443,6 +444,15 @@ int main(int argc, char **argv) {
         if (!dead && cur < 0) {   /* missiles share the screen with lasers only when no laser pattern is active */
             if (mst == 0 && dist >= mStart && --mwait <= 0) { mwait = 120; if (rand() % 100 < mProb) { mst = 1; mtick = 0; my = y + 45; } }
             else if (mst == 1) { float t = y + 45; my += fminf(fmaxf(t - my, -mChase * 2), mChase * 2); if (++mtick > 90) { mst = 2; mx = W; } }
+        }
+        if (haveTok && !dead && state == 1) {
+            if (!tokOn && --tokWait <= 0) { tokOn = 1; tokX = W + 40; tokY = 120 + rand() % (H - 300); tokWait = 500 + rand() % 300; }
+            if (tokOn) {
+                tokX -= 4;
+                if (gTM && hypotf(tokX - 95, tokY - (y + 45)) < 200) { tokX += (95 - tokX) * 0.12f; tokY += (y + 45 - tokY) * 0.12f; }   /* Token Magnet pulls it in */
+                if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; score += gTG ? 30 : 10; sfx_play(sC3, 0); }
+                else if (tokX < -60) tokOn = 0;
+            }
         }
 #ifdef AUTOTEST
         if (cst) { if (mech != 2) { mech = 2; vt = 0; } y = 170 + 90 * sinf(frame * 0.05f) + 28 - 45; }   /* test build only: give a vehicle and steer it into the boss head so the ram path runs */
@@ -516,6 +526,7 @@ int main(int argc, char **argv) {
             quad(&emit, zx - hx - 16, zy - hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, zx + hx - 16, zy + hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
         }
+        if (tokOn && haveTok && state == 1) { float k = 36 + 4 * sinf(frame * 0.2f); quad(&tokS, tokX + 20 - k / 2, tokY + 20 - k / 2, k, k, 0, 0, 1, 1); }
         if (gDog && haveDog && state == 1) { int c = (frame / 6) & 3; quad(&dogS, 26, H - 92, 64, 64, c / 4.f, 0.5f, (c + 1) / 4.f, 0.75f); }
         if (cst && boomOn) quad(&boomS, boomX, boomY - 36, 128, 72, 1, 0, 0, 1);
         if (cst) for (int i = 6; i >= 0; i--) { float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f); if (i) quad(&colB, sx, sy, 56, 56, 0, 0, 1, 1); else quad(&colH, sx - 8, sy - 4, 64, 64, 1, 0, 0, 1); }
