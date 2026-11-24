@@ -38,7 +38,7 @@ static int loadSpr(Spr *s, const char *name) {
 static int tick;   /* frame counter for the AUTOTEST build, which fakes input so Dolphin can run headless */
 static u32 btnDown(void) {
 #ifdef AUTOTEST
-    return (tick % 600 == 90) ? WPAD_BUTTON_A : 0;   /* start / restart */
+    return (tick % 600 == 90) ? WPAD_BUTTON_A : (tick % 600 == 300 || tick % 600 == 480) ? WPAD_BUTTON_PLUS : 0;   /* start / restart / pause / resume */
 #else
     return INPUT_ButtonsDown();
 #endif

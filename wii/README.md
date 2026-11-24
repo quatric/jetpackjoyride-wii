@@ -138,4 +138,4 @@ names to 4, so walk by the stated length, not alignment). Class names are follow
 plain-XML sibling `fpscounterscreen.xml` is the reference tree (component > property name/value strings) to check a decoder
 against; no decoder exists yet.
 
-PLUS pauses and resumes during a run (compiled, not exercised: the AUTOTEST fake input does not press it).
+PLUS pauses and resumes during a run. The AUTOTEST build fakes PLUS at ticks 300 and 480 of each 600; verified in Dolphin (distance frozen under PAUSED, then the run continues).
