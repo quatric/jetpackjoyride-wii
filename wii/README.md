@@ -401,3 +401,7 @@ Item 14, the real Robot Dog art (`robodog-alt.png`, a 4-frame trot from row 2 of
 ### Tokens, Token Magnet and Token Gift
 
 A spin-token pickup now exists: the real `RewardSystem/Tokens/pickup.png` gem drifts in about every 8 to 13 seconds at a random height and pays 10 coins when you touch it. How often it comes and what it pays are mine (in the game tokens feed the reward system, which this port does not have). The shop gained **Token Magnet** (the gem is pulled in from about 200 px) and **Token Gift** (a token pays 30 instead of 10), items 15 and 16, both with their real icons and my own readings of `perks.xml`; 500 coins each, `save.txt` bits 16384 and 32768. The fake-input build buys all sixteen from 14000 coins (save ends with `65535`) and one run logged a token collected (`tok 1`); the magnet's pull and the triple payout were not isolated in a test. Four `perks.xml` gadgets remain: Nerd Repellent, Boost Machine, Lucky Token, Flying Pig.
+
+### Shop: Boost Machine and Lucky Token
+
+Items 17 and 18, real icons, both tied to the spin token and both my own readings: **Boost Machine** makes a token also carry you 10 m ahead; **Lucky Token** makes tokens come twice as often. 600 and 450 coins (mine); `save.txt` bits 65536 and 131072. The fake-input build buys all eighteen from 17000 coins (save ends with `262143`); neither effect was isolated in a test. Two `perks.xml` gadgets remain: Nerd Repellent (this port has no scientists to repel) and Flying Pig (no standalone art found).
