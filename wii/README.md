@@ -137,3 +137,5 @@ names to 4, so walk by the stated length, not alignment). Class names are follow
 (`0x80000xxx`), property names by a small type id. Component records then name their class and `Id` by table index. The
 plain-XML sibling `fpscounterscreen.xml` is the reference tree (component > property name/value strings) to check a decoder
 against; no decoder exists yet.
+
+PLUS pauses and resumes during a run (compiled, not exercised: the AUTOTEST fake input does not press it).

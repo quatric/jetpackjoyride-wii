@@ -287,13 +287,15 @@ int main(int argc, char **argv) {
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     Spr mechS[3] = {{0}, {0}, {0}}; int haveV[3], nV = 0, vt = 0, jl = 0; for (int i = 0; i < 3; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
-    int mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
+    int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
         if (btnDown() & WPAD_BUTTON_HOME) break;
-        if (state != 1) {
+        if (state == 1 && (btnDown() & WPAD_BUTTON_PLUS)) paused ^= 1;
+        if (paused && state == 1) { dist = (int)(scroll / 2); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
+        if (state != 1) { paused = 0;
             if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
@@ -410,6 +412,7 @@ int main(int argc, char **argv) {
             if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
             if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
         }
+        if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
         { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); snprintf(hud, sizeof hud, "LEVEL %d/%d", lvl + 1, nLevels); drawText(20, 78, 0.5f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
