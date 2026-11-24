@@ -213,10 +213,16 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
-    float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0; (void)score;
+    float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
     for (;;) {
         INPUT_Update();
+        int dist = 0;
         if (INPUT_ButtonsDown() & WPAD_BUTTON_HOME) break;
+        if (state != 1) {
+            if (INPUT_ButtonsDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; state = 1; }
+            frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
+            goto render;
+        }
         vy += (INPUT_ButtonsHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2) ? -0.9f : 0.6f);
         if (vy > 9) vy = 9;
         if (vy < -9) vy = -9;
@@ -226,7 +232,7 @@ int main(int argc, char **argv) {
         if (dead) { if (--dead == 0) { y = 300; vy = 0; scroll = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; } }
         else scroll += 4;
         frame++;
-        int dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
+        dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
         if (!dead) {
             if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = 60; } }
             else if (++ptick > pats[cur].time + 60) cur = -1;
@@ -261,6 +267,7 @@ int main(int argc, char **argv) {
         prevCur = cur; prevMst = mst;
         { int thrust = !dead && (INPUT_ButtonsHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2));
           if (thrust && !sfx_playing(jetV)) jetV = sfx_play(sJet, 1); else if (!thrust && jetV > 0) { sfx_stop(jetV); jetV = -1; } }
+        render:
         GX_InvVtxCache(); GX_InvalidateTexAll();
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
@@ -285,7 +292,13 @@ int main(int argc, char **argv) {
             quad(&emit, W - 64, ly - 42, 64, 85, 64.f / 64, 0, 0, 85.f / 88);
         }
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
-                { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); }
+                if (state != 1) {
+            char t[48];
+            drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
+            if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
+            if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
+        }
+        { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
     audio_stop(); INPUT_Shutdown(); return 0;
