@@ -393,3 +393,7 @@ Item 12, real `fruitMissile` icon (`PERK_FRUIT_MISSILES`, value 3 in `perks.xml`
 ### Shop: Icy Exterior
 
 Item 13, real `icySkin` icon (`PERK_ICY_EXTERIOR`, value 3.5): after a hit on foot the world keeps scrolling for the 60 death frames while slowing, so the distance counts a few metres further. The slide numbers are mine (`settings.xml` has only `DEATH_X_GROUND_FRICTION_ICY`); 350 coins (mine), `save.txt` bit 4096. The fake-input build buys all thirteen from 10000 coins (save ends with `8191`); the best distance was 229 m against 226 m earlier, but runs vary, so the slide is not isolated. Seven `perks.xml` gadgets remain: Nerd Repellent, Boost Machine, Token Magnet, Token Gift, Lucky Token, Flying Pig, Robot Dog.
+
+### Shop: Robot Dog
+
+Item 14, the real Robot Dog art (`robodog-alt.png`, a 4-frame trot from row 2 of its sheet) and shop icon: a dog trots at the left edge of the screen and picks up coins that pass near the ground in front of it. The game'"'"'s `PERK_ROBOT_DOG` says nothing about what the dog does, so that is my own reading, as is the 600-coin price (`save.txt` bit 8192). Seen in a Dolphin capture trotting on the ground once Barry is out of a vehicle; the fake-input build buys all fourteen from 12000 coins (save ends with `16383`); the ground pickup was not isolated in a test. Six `perks.xml` gadgets remain: Nerd Repellent, Boost Machine, Token Magnet, Token Gift, Lucky Token, Flying Pig.
