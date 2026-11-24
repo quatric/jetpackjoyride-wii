@@ -209,3 +209,8 @@ AUTOTEST build appends one `run lvl .. dist ..` line per run to `dbg.txt` so thi
 Delorean, HoverBoard, Starship, Ecto, IceSkates; `spawnRange` 650) and `Vehicles/*.xml` give per-vehicle `<probability>` (Mech 20, Hog 20,
 ProfitBird 50). Crate spawns now pick by those weights (20 where the APK has no file). The weighted pick compiles but the
 AUTOTEST build forces a vehicle, so it was not exercised in Dolphin; the other eight vehicles are still not implemented.
+
+Title screen uses the game's own logo art: `textures/logo/default/logo_text.png` (downscaled to 360x218) and `logo_barry.png` (192x270),
+made with `mkspr.py` into `logot.spr` / `logob.spr`; the app falls back to text if they are missing. Checked in Dolphin.
+Capturing Dolphin for checks: `wii/tools/winid.swift` (`swiftc -O winid.swift -o winid`; `screencapture -x -l $(./winid <pid>)`)
+grabs only Dolphin's own window; a fixed screen region is unsafe because it can include other apps.

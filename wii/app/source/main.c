@@ -38,7 +38,7 @@ static int loadSpr(Spr *s, const char *name) {
 static int tick;   /* frame counter for the AUTOTEST build, which fakes input so Dolphin can run headless */
 static u32 btnDown(void) {
 #ifdef AUTOTEST
-    return (tick % 600 == 90) ? WPAD_BUTTON_A : (tick % 600 == 300 || tick % 600 == 480) ? WPAD_BUTTON_PLUS : 0;   /* start / restart / pause / resume */
+    return (tick == 420 || (tick > 420 && tick % 600 == 90)) ? WPAD_BUTTON_A : (tick % 600 == 300 || tick % 600 == 480) ? WPAD_BUTTON_PLUS : 0;   /* start / restart / pause / resume */
 #else
     return INPUT_ButtonsDown();
 #endif
@@ -322,6 +322,7 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
+    Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[5] = {{0}, {0}, {0}, {0}, {0}}; int haveV[5], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 5; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
@@ -472,7 +473,10 @@ int main(int argc, char **argv) {
                 if (state != 1) {
             char t[48];
             if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t); }
-            drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
+            if (state == 0 && haveLogo) {
+                quad(&logoT, 24, 40, 360, 218, 0, 0, 360.f / 360, 218.f / 220);
+                quad(&logoB, 400, 80, 192, 270, 0, 0, 192.f / 192, 270.f / 272);
+            } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
             if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
             if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
         }
