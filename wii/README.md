@@ -9,7 +9,7 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 
 | ext | status |
 |-----|--------|
-| `.tex` | Header `TEX\1`; raw packed pixels, no mips. 4444 / 5551 / 888 / 8888 decoded by `tools/tex2png.py` (4651 of 5323). Files with flag `6` (672, e.g. `textures/RewardSystem/HUD`) use an unidentified 1.5 byte/px block format (8-byte blocks, DXT1-like but not plain DXT1). |
+| `.tex` | Header `TEX\1`; no mips. Packed 4444 / 5551 / 888 / 8888 pixels, and flag `6` = ETC1 colour plane + 8-bit alpha plane (`tools/tex2png.py`). All 5323 decode. |
 | `.atlas` | Plain binary, magic `0xfe000003` (parsed by `tools/atlas.py`, sliced by `tools/atlas_extract.py`). Sprites are keyed by `FileStringHash` (`tools/hashname.py`: Jenkins lookup2, init `0x805`, path lowercased, `\\`→`/`) of the original sprite `.tex` path. Those source `.tex` files are not shipped, so names are recovered from path strings in the assets and `libmortargame.so`: 1520 of 2600 sprites named so far, the rest saved as `unknown/<hash>`. `SpineAnimation/*.atlas` are libgdx text atlases (skipped). |
 | `.uiscreen` | Chunked binary (`FSIU`/`BSIU`/`TSIU`), screen components. |
 | `bxml` (the `.xml` files, 1248 of them) | Binary XML, fully decoded by `tools/bxml.py` (string table + element/text nodes). Holds levels, laser patterns, sprite animation grids (`sprite_file`), configs. |
