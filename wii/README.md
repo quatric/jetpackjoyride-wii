@@ -310,3 +310,7 @@ The title screen has a SHOP button under START (up/down selects, A opens). The s
 ### Shop: Slow Missiles
 
 A second gadget, Slow Missiles (real icon; missile speed x0.72, the `value1` in `perks.xml`), for 400 coins (price mine). Up/down in the shop switches item; `save.txt`'s third number is now a bitmask (1 magnet, 2 slow missiles; old saves still load). The fake-input build buys both (1000 coins start, 100 left, save ends with `3`). The slower missile itself was not isolated in a test.
+
+### Controls
+
+A, B, 1 or 2 hold the jetpack (and start or restart a run); PLUS pauses; HOME quits. In the pause menu and on the title screen, the d-pad selects (left/right in pause, up/down for START/SHOP and between shop items), A or 2 confirms, B or 1 backs out of the shop. Menu directions are the raw `WPAD_BUTTON_UP/DOWN/LEFT/RIGHT` bits, so with the Wii Remote held sideways the physical d-pad directions are rotated relative to what is drawn; that has not been tried on a real remote, and a Classic Controller or GameCube pad should behave as drawn.
