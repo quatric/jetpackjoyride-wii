@@ -176,3 +176,8 @@ Gravity Suit (`Vehicles/GravitySuit/VehicleGravitySuit.xml`: 6x4 grid of 42 px f
 fall_up 13-14) is the fourth vehicle: a press flips gravity between floor and ceiling and the suit is drawn upside down on the
 ceiling; sound `grav_change_1`. The APK has no physics or head-placement file for it, so the gravity strength (0.9/frame) is my
 own, the head is not drawn separately, and the flip/land animations are unused. Seen in Dolphin on the ceiling and flipping.
+
+Teleporter (`Vehicles/Teleporter/vehicleTeleporter.xml`: 4x2 grid of 64 px frames, teleport_out 5-8, teleport_in 8-5, idle 1-4;
+sound `CFT_activate`): the fifth vehicle. It hovers; a press vanishes (invulnerable for about 0.4 s) and reappears at a random
+height. The real aiming reticle (`teleportreticle`) is not used, and the 24-frame timing is mine. Seen working in Dolphin.
+The AUTOTEST build cycles through all five vehicles by level.
