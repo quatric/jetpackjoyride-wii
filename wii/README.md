@@ -330,3 +330,7 @@ Fourth item: while riding a vehicle, coins within about 190 px are pulled in (th
 ### Colossatron (my own boss)
 
 Every 2500 m from 1500 m the game sends in a Colossatron: the real head and body-segment art as a snake of 7 pieces that sweeps in from the right in a sine wave; touching a piece is a hit (a vehicle absorbs it as usual), and outlasting it gives 25 coins. **This is my own design**: the real boss logic is native code, so the speed, wave, spacing and reward are guesses, and it has no jaw, attacks, health or music (`Music_Colossatron.ogg` exists but is not used). The test build triggers it at 300 m; seen on screen in Dolphin, the reward path was checked with a log counter (one boss outlasted, coins 59 -> 84, the 25-coin reward); the hit path too (two later runs logged cumulative effective boss hits 1 then 3, each costing the vehicle or the run).
+
+### Shop: Rubber Bones
+
+Fifth item, with the real icon: when you die on foot the tumble bounces further (`settings.xml` has `DEATH_BOUNCE_DAMPENING_RUBBER` 1.6 against 0.99 normally; I scale that onto my 0.5 bounce factor to get 0.8). Cosmetic only. 350 coins (price mine); `save.txt` bit 16. The fake-input build buys all five from 2500 coins (284 left after the first run, save ends with `31`); the bounce itself was not compared in a test.
