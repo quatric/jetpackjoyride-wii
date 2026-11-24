@@ -374,3 +374,7 @@ Follow-up on boss health: my first ramming rule could never kill it (the head cr
 ### Shop: Vehicle Start
 
 Seventh item, with the real `vehicleStart` icon (`PERK_START_IN_VEHICLE` in `perks.xml`): every run begins riding a random one of the 13 vehicles. 800 coins (mine), `save.txt` bit 64. The fake-input build buys all seven from 4500 coins (1358 left after the first run, save ends with `127`) and a capture at 39 m shows the run already on the Mech; the random pick was not checked across vehicles.
+
+### Shop: Gravity Belt and Dud Zappers
+
+Items 8 and 9, both with their real icons and both my own readings of `perks.xml`: **Gravity Belt** (value 0.22) lowers the vertical speed cap by 22
