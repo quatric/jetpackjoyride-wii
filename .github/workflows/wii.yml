@@ -12,7 +12,8 @@ jobs:
       - name: Dependencies
         run: |
           # pkg.devkitpro.org answers 403 now and then; retry instead of failing the build
-          for i in 1 2 3 4 5; do dkp-pacman -Syu --noconfirm && dkp-pacman -S --noconfirm ppc-libvorbisidec ppc-libogg && break; [ $i = 5 ] && exit 1; sleep 60; done
+          # try the image's own package databases first (no sync, so no mirror hit for them), then fall back to a synced install with retries
+          dkp-pacman -S --noconfirm ppc-libvorbisidec ppc-libogg || for i in 1 2 3 4 5; do dkp-pacman -Syu --noconfirm && dkp-pacman -S --noconfirm ppc-libvorbisidec ppc-libogg && break; [ $i = 5 ] && exit 1; sleep 60; done
           apt-get update && apt-get install -y zip git
           git clone --depth 1 https://github.com/quatric/libwiiinput ../libwiiinput
           git clone --depth 1 --recurse-submodules https://github.com/quatric/libwiiupdate ../libwiiupdate
