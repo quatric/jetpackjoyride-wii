@@ -214,3 +214,11 @@ Title screen uses the game's own logo art: `textures/logo/default/logo_text.png`
 made with `mkspr.py` into `logot.spr` / `logob.spr`; the app falls back to text if they are missing. Checked in Dolphin.
 Capturing Dolphin for checks: `wii/tools/winid.swift` (`swiftc -O winid.swift -o winid`; `screencapture -x -l $(./winid <pid>)`)
 grabs only Dolphin's own window; a fixed screen region is unsafe because it can include other apps.
+
+## One-command data build
+
+`wii/make_sd.sh <assets> <png> <sprites> <out>` rebuilds the whole app data folder (all `.spr`, the lasers/missile/zapper/pattern
+tables, the 34 levels with foreground, the title logo and the 26 sound files) from the extracted APK, replacing the hand-run
+commands listed earlier in this file (those are out of date). Checked by building into a fresh folder and comparing it
+byte for byte with the folder used for the Dolphin runs: identical apart from `boot.dol`. Steps before it: `tex2png.py <assets>
+<png>` and `atlas_extract.py <assets> <sprites> [libmortargame.so]`.
