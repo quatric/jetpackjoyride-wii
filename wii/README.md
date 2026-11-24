@@ -381,3 +381,7 @@ Items 8 and 9, both with their real icons and both my own readings of `perks.xml
 ### Shop: Gravity Belt and Dud Zappers
 
 Items 8 and 9, both with their real icons and both my own readings of `perks.xml`: **Gravity Belt** (value 0.22) lowers the vertical speed cap by 22 percent, for finer control; **Dud Zappers** (value 1) makes the first zapper of each run harmless. 450 and 500 coins (mine); `save.txt` bits 128 and 256. The shop is now table-driven (`shopName`, `shopDesc`, `shopPrice`, `shopOwn`), so another item is one row plus its effect. The fake-input build buys all nine from 6000 coins (1882 left after the first run, save ends with `511`); neither effect was isolated in a test.
+
+### Shop: X-Ray Specs and Brick Bones
+
+Items 10 and 11, real icons, my own effects: **X-Ray Specs** (`PERK_SHOW_VEHICLES`) makes vehicle crates come twice as soon (the wait between them is halved); **Brick Bones** (`brick` icon, the `DEATH_BOUNCE_DAMPENING_BRICK` 0.6 tunable) makes the death tumble bounce only a quarter as much. 500 and 300 coins (mine); `save.txt` bits 512 and 1024. The fake-input build buys all eleven from 8000 coins (the save ends with 2450 coins and `2047`); the effects were not isolated in a test.
