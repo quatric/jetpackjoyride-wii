@@ -131,3 +131,9 @@ ends it; floats are plain IEEE (4.0, 47.0, 238.0 in `fpscounterscreen`, which al
 `fpscounterscreen.xml` with the same tree: position, width/height, dock, alignment, text). Two files in `Screens/` are
 bxml and can be compared against the binary version to pin the value encoding. Decoding the rest is the next step
 toward real menus.
+
+More on the string table: after `TSIU` comes a count, then entries `u32 len, bytes` where len is exact (the writer pads some
+names to 4, so walk by the stated length, not alignment). Class names are followed by a type word with the high bit set
+(`0x80000xxx`), property names by a small type id. Component records then name their class and `Id` by table index. The
+plain-XML sibling `fpscounterscreen.xml` is the reference tree (component > property name/value strings) to check a decoder
+against; no decoder exists yet.
