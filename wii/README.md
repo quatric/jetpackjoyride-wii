@@ -306,3 +306,7 @@ The title screen's prompt is now the game's own `startPressed` button from `Titl
 ### Shop: Coin Magnet
 
 The title screen has a SHOP button under START (up/down selects, A opens). The shop sells one gadget, the Coin Magnet, with the real icon (`perks.xml` lists 19 gadgets but gives no prices, so the price of 500 coins is mine, paid from the lifetime coins in `save.txt`, which now has a third number for ownership). With the magnet owned, coins within about 130 px of the player are collected. Checked in Dolphin with the fake-input build, which now selects SHOP, opens it, buys and goes back before the first run: starting from 600 coins the log shows `mag 1` and 100 coins left plus each run's pickups (43, then 103, then 52), and `save.txt` ends with ownership `1`. Whether the magnet radius feels right is not judged.
+
+### Shop: Slow Missiles
+
+A second gadget, Slow Missiles (real icon; missile speed x0.72, the `value1` in `perks.xml`), for 400 coins (price mine). Up/down in the shop switches item; `save.txt`'s third number is now a bitmask (1 magnet, 2 slow missiles; old saves still load). The fake-input build buys both (1000 coins start, 100 left, save ends with `3`). The slower missile itself was not isolated in a test.
