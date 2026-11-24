@@ -276,3 +276,7 @@ Ninth vehicle (`dlr.spr` from `delorean/delorean.png`): one static 157x62 frame,
 ### Starship
 
 Tenth vehicle (`ship.spr` from `starship/starship.png`): one static 232x98 frame, no rider; glow, jet and speed-table layers are not drawn. Hog physics, a guess. Checked in Dolphin.
+
+### Sleigh
+
+Eleventh vehicle (`sled.spr` from `sled/sleigh.png`): a real 4x2 animation sheet of 76x64 frames, drawn without the reindeer (separate 256x256 sheet, not analysed). Hog physics, a guess. Checked in Dolphin.
