@@ -231,3 +231,11 @@ uploads the asset-free Homebrew Channel zip as an artifact. The first run passed
 libwiiupdate has nothing to install yet; attaching the zip to a tagged release is left for when a build has been tried on a console.
 
 `python3 -I wii/tools/test_tools.py` checks the converters without the APK (hash normalisation; SPR0/SPR1 headers, padding, size and crop).
+
+### .uiscreen tables, decoded
+
+`tools/uistrings.py` now parses the tables after `TSIU` as eight counted groups (`u32 n`, then n entries of `u32 len + len bytes`:
+NUL-terminated text and 0-3 type-id bytes, e.g. `position` carries `f8 3c 00`). All 471 files parse into eight groups with the same
+roles: 0 aliases (`~default`), 1 component classes (74 distinct names across all screens), 3 events/triggers, 4 property names
+(135 in Pause), 5 and 7 unknown, 6 instance ids (251 in Pause). The component stream after the tables (`HCIU` records with tagged,
+unaligned property data) is still undecoded, so no positions, sizes or textures yet.
