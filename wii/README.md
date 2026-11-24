@@ -288,3 +288,7 @@ Twelfth vehicle (`jski.spr` from `Jetski/jetski.png`): one static 64x32 frame; t
 ### Dragon
 
 Thirteenth vehicle, so all 13 in `vehicleProbability.xml` can now be ridden. It is assembled from the real default-dragon sprites (`drh.spr` head, `drb.spr` body, `drf.spr` four wing frames): head in front, three body segments trailing in a sine wave, wings on the middle one. The layout is mine, since the real offsets live in native code; no jaw, horn, nose or fire. Hog physics, a guess. Checked in Dolphin.
+
+### .uiscreen events
+
+`uidecode.events()` now fills `component["events"]` with `(event, [(command, [string args])])` read from the `HTVE`/`CEIU` sections (numeric operands are still skipped). Across all screens `OnButtonPressed` is the commonest event (881) and `InvokeTrigger` the commonest command (1176), e.g. the pause buttons invoke `Triggers.Buttons.Resume`, `.Retry` and `.Quit`. Known gap: child lookup via `hasParent` does not reach everything under `PauseContent` (only its title text shows), so a menu cannot be laid out from it yet.

@@ -6,7 +6,7 @@ Layout found by comparing fpscounterscreen.uiscreen with its XML twin (little en
   closing 0x7fff1, then MAIU BAIU 0 EMIU 0 0 0 0xcf980001.  Slot types: 1 bool, 2 enum string, 3 vector3, 5 float,
   6 rotation, 8 colour (4 words), 10 text string; 4, 7, 9 not seen with data yet.
 usage: uidecode.py <assets>/xml/Screens/x.uiscreen [tables dir ok]"""
-import struct, sys, os
+import re, struct, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import uistrings
 PRE = {1: 5, 2: 5, 10: 5, 5: 5, 7: 5, 3: 7, 6: 7, 4: 7, 8: 8, 9: 8}   # words between the property name and its value
@@ -68,12 +68,24 @@ def decode(b):
         assert W(k) == MA, hex(k); k += 32   # MAIU BAIU 0 EMIU 0 0 0 cf980001
         comps.append(c)
         if k + 4 <= len(b) and W(k) not in (HC, ESIU):   # trigger / event sections between components are not decoded: resync
-            j = b.find(b'HCIU', k); k = j if j >= 0 else b.rfind(b'ESIU')
+            j = b.find(b'HCIU', k); j = j if j >= 0 else b.rfind(b'ESIU'); c['events'] = events(b[k:j]); k = j
     return comps, W(k) == ESIU
 if __name__ == '__main__':
     for f in sys.argv[1:]:
         cs, ok = decode(open(f, 'rb').read()); print(f, 'complete' if ok else 'INCOMPLETE')
         for c in cs: print(' ', c['id'], c['class'], c['order'], c['props'])
+
+
+def events(seg):
+    """HTVE <u32 len><event name> ... CEIU <u32 len><command> ... FEIU: [(event, [(command, [string args])])]. Strings only; the numeric operands are not decoded."""
+    out = []
+    for h in seg.split(b'HTVE')[1:]:
+        n = struct.unpack_from('<I', h, 0)[0]; name = h[4:4 + n].rstrip(b'\0').decode('latin1'); cmds = []
+        for cm in h.split(b'CEIU')[1:]:
+            n = struct.unpack_from('<I', cm, 0)[0]; cmd = cm[4:4 + n].rstrip(b'\0').decode('latin1')
+            if re.fullmatch(r'[A-Za-z]\w*', cmd): cmds.append((cmd, [x.decode('latin1') for x in re.findall(rb'[ -~]{3,}', cm[4 + n:])]))
+        out.append((name, cmds))
+    return out
 
 
 def children(comps):
