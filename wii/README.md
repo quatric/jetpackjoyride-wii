@@ -389,3 +389,7 @@ Items 10 and 11, real icons, my own effects: **X-Ray Specs** (`PERK_SHOW_VEHICLE
 ### Shop: Fruit Missiles
 
 Item 12, real `fruitMissile` icon (`PERK_FRUIT_MISSILES`, value 3 in `perks.xml`): every missile you dodge pays 3 coins. That is my own reading; the APK does not say what the perk does. 400 coins (mine), `save.txt` bit 2048. The fake-input build buys all twelve from 9000 coins (save ends with 3706 coins and `4095`); the payout itself was not isolated in a test. Left unbuilt from `perks.xml`: Nerd Repellent, Boost Machine, Token Magnet, Token Gift, Lucky Token, Flying Pig, Robot Dog and Icy Exterior, which rely on tokens, scientists, pets or a slot machine that this port does not have.
+
+### Shop: Icy Exterior
+
+Item 13, real `icySkin` icon (`PERK_ICY_EXTERIOR`, value 3.5): after a hit on foot the world keeps scrolling for the 60 death frames while slowing, so the distance counts a few metres further. The slide numbers are mine (`settings.xml` has only `DEATH_X_GROUND_FRICTION_ICY`); 350 coins (mine), `save.txt` bit 4096. The fake-input build buys all thirteen from 10000 coins (save ends with `8191`); the best distance was 229 m against 226 m earlier, but runs vary, so the slide is not isolated. Seven `perks.xml` gadgets remain: Nerd Repellent, Boost Machine, Token Magnet, Token Gift, Lucky Token, Flying Pig, Robot Dog.
