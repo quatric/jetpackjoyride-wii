@@ -352,3 +352,7 @@ The music thread can now change tracks (`audio_switch`): `Music_Shop` while the 
 ### Obstacle pacing
 
 The gap between laser patterns used a fixed 60 frames. It now follows `LevelPacing.xml`: `MIN/MAX_SPAWN_INTERVAL` per distance band (280-470 at the start, tightening to 150-230 from 9500 m). I take those units as the game's own pixels, so x1.5 to ours and /4 for the 4 px per frame scroll, giving roughly 105-176 frames at the start; that unit reading is a guess, and the file also names the gates, missile and vehicle tables, whose spacing I did not change. Runs in the test build still complete (894 m and 748 m).
+
+### Distance scale
+
+The distance counter was `scroll / 2`, about 120 "metres" a second, which put every distance-based table in the APK (laser and missile start distances, pacing bands, vehicle spawn, the boss) far too early. It is now `scroll / 27`: `settings.xml` `DISTANCE_DIVISOR` is 18 and our scroll is the game's pixels times 1.5, giving about 9 m/s at 4 px per frame, so 1000 m takes under two minutes. The unit reading is an inference from that one value, not checked against the real game. The fake-input test build now dies at 43-51 m (its boss trigger there is 30 m and the fake input cannot dodge), so its old 700-1200 m runs no longer compare.

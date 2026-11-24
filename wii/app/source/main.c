@@ -311,6 +311,7 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     float va = r * (float)fh / VEH[vt].ph, vb = (r + 1) * (float)fh / VEH[vt].ph;
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
+#define DIST(sc) ((int)((sc) / 27.f))
 #define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 90; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
 int main(int argc, char **argv) {
@@ -365,7 +366,7 @@ int main(int argc, char **argv) {
             u32 bd = btnDown(); if ((bd & WPAD_BUTTON_LEFT) && psel > 0) psel--; if ((bd & WPAD_BUTTON_RIGHT) && psel < 2) psel++;
             if (bd & (WPAD_BUTTON_A | WPAD_BUTTON_2)) { if (psel == 2) paused = 0; else if (psel == 1) { paused = 0; state = 2; doRestart = 1; } else { paused = 0; state = 0; } }
         }
-        if (paused && state == 1) { dist = (int)(scroll / 2); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
+        if (paused && state == 1) { dist = DIST(scroll); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
         if (state != 1) { paused = 0;
             u32 td = btnDown();
             if (state == 0 && haveMag) {   /* title: START / SHOP; the shop sells the Coin Magnet (price is mine: the APK has none) */
@@ -374,7 +375,7 @@ int main(int argc, char **argv) {
             }
             if (doRestart || ((btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); dudLeft = gDud ? 3 : 0; cst = 0;
 #ifdef AUTOTEST
-            nextBoss = 300;
+            nextBoss = 30;
 #else
             nextBoss = 1500;
 #endif
@@ -402,11 +403,11 @@ int main(int argc, char **argv) {
           }
           wasHeld = held; }
         y += vy; if (inv) inv--;
-        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[13] = {20, 20, 50, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
+        if (!mech && mpick < -900 && !dead && DIST(scroll) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[13] = {20, 20, 50, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
             int tw = 0; for (int i = 0; i < 13; i++) if (haveV[i] && haveV[13] && haveV[14] && haveV[15]) tw += vw[i];
             if (tw) { int r = rand() % tw; for (int i = 0; i < 13; i++) if (haveV[i] && haveV[13] && haveV[14] && haveV[15] && (r -= vw[i]) < 0) { vt = i; break; } nV = 1; } else mpick = -999; }
 #ifdef AUTOTEST
-        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
+        if (!mech && DIST(scroll) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; sfx_play(sVm[vt], 0); } }
@@ -415,14 +416,14 @@ int main(int argc, char **argv) {
         if (dead && mech != 2) {   /* death tumble: settings.xml DEATH_GRAVITY 0.24 (x1.5 screen scale), MIN_BOUNCE_VELOCITY 4, DEATH_BOUNCE_DAMPENING 0.99 (damped further here: the unit of that one is a guess) */
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
+        if (dead) { if (--dead == 0) { state = 2; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
             { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d boss %d bhit %d boom %d/%d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, bossDone, bossHit, boomDone, boomHit, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
         frame++;
-        dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
+        dist = DIST(scroll);   /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
         if (!dead) {
             if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = spawnWait(dist); } }
             else if (++ptick > pats[cur].time + 60) cur = -1;
