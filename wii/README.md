@@ -229,3 +229,5 @@ byte for byte with the folder used for the Dolphin runs: identical apart from `b
 libvorbisidec/libogg, clones and builds quatric/libwiiinput and libwiiupdate, runs `make -C wii/app`, then `wii/package.sh`) and
 uploads the asset-free Homebrew Channel zip as an artifact. The first run passed. It does not create a GitHub release, so
 libwiiupdate has nothing to install yet; attaching the zip to a tagged release is left for when a build has been tried on a console.
+
+`python3 -I wii/tools/test_tools.py` checks the converters without the APK (hash normalisation; SPR0/SPR1 headers, padding, size and crop).
