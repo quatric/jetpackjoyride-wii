@@ -20,6 +20,7 @@ spr "$P/font/vehicle_font.png" "$O/font.spr";  cp "$A/font/vehicle_font.fnt" "$O
 spr "$V/Mech/vehicleMech.png" "$O/mech.spr";  spr "$V/Hog/vehicleHog.png" "$O/hog.spr";  spr "$V/Bird/vehicleBird.png" "$O/bird.spr"
 spr "$V/GravitySuit/vehicleGravitysuit.png" "$O/gsuit.spr";  spr "$V/Teleporter/vehicleTeleporter.png" "$O/tele.spr"
 spr "$V/HoverBoard/HoverBoard/hoverboard.png" "$O/hover.spr"
+spr "$V/IceSkates/IceSkates/iceskates.png" "$O/skate.spr"
 tmp=$(mktemp -d)   # title logo, downscaled so it stays small in RAM
 python3 -I - "$P/textures/logo/default" "$tmp" <<'PY'
 import sys

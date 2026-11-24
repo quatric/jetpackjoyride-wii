@@ -260,3 +260,7 @@ sections between components (`HTVE`, `CEIU`, `FEIU`, SetProperty actions) are sk
 ### Hoverboard
 
 Sixth rideable vehicle (`hover.spr` from `HoverBoard/hoverboard.png`: a 4x3 grid of 34x47 frames with the rider baked in, row 0 riding, rows 1-2 airborne). Its physics reuse the Hog's numbers and its crate weight is 20; both are guesses, since the real behaviour is native code. Checked in Dolphin with the fake-input build.
+
+### Ice Skates
+
+Seventh vehicle (`skate.spr` from `IceSkates/iceskates.png`, a 4x4 grid of 38x50 frames, rider baked in; row 0 skating, row 1 airborne). Physics are the Hog's, a guess. Checked in Dolphin.
