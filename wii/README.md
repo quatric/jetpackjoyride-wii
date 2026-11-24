@@ -119,3 +119,15 @@ none; `wii/package.sh <sd-layout folder>` bundles them for your own SD card only
 
 More stand-in sounds (picked by name): `dud_zapper_pop` -> `zap.ogg` when a zapper appears, `mech_turkey_death` ->
 `vdie.ogg` when a vehicle is destroyed.
+
+## .uiscreen (menus) - first findings, not decoded yet
+
+471 files in `xml/Screens/`. Layout (little endian): `FSIU` + 4 version bytes + 0x28 bytes (hash/flags, ends `ffffffff`
+x2), `BSIU` (u32 len + `"1.1.3 (1)"`-style version string), `TSIU` (counted table of length-prefixed strings: class names such
+as ComponentScreen/ComponentQuad/ComponentText, property names height/position/colour/dock/..., then value strings and
+instance names), then component blocks `HCIU ... MAIU BAIU ... EMIU` and a final `ESIU`. Inside a block the stream is
+tagged, unaligned: `0007aaa1 <prop index>` opens a property, `0007bbbe`/`0007bbb1` and `0007dee1` frame values, `0007fff1`
+ends it; floats are plain IEEE (4.0, 47.0, 238.0 in `fpscounterscreen`, which also exists as a decodable bxml
+`fpscounterscreen.xml` with the same tree: position, width/height, dock, alignment, text). Two files in `Screens/` are
+bxml and can be compared against the binary version to pin the value encoding. Decoding the rest is the next step
+toward real menus.
