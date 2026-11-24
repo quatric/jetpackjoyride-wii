@@ -10,6 +10,7 @@
 #include <math.h>
 #include "input_wii.h"
 #include "wiiupdate.h"
+#include "audio.h"
 
 #define W 640
 #define H 480
@@ -124,6 +125,7 @@ int main(int argc, char **argv) {
     if (!loadSpr(&coin, "coin.spr")) fallbackSpr(&coin);
     int haveB = 1, haveC = 1;
     loadPattern(); loadLasers();
+    { char mp[160]; snprintf(mp, sizeof mp, "%smusic.ogg", dir); audio_start(mp); }
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     int cur = -1, ptick = 0, wait = 90, dead = 0;
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
@@ -166,5 +168,5 @@ int main(int argc, char **argv) {
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
-    INPUT_Shutdown(); return 0;
+    audio_stop(); INPUT_Shutdown(); return 0;
 }

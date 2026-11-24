@@ -36,7 +36,7 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 Builds with devkitPPC/libogc plus sibling checkouts of libwiiinput and libwiiupdate (`make` in each, then `make` here).
 Hold A/B/1/2 to fly; coins come from a pattern file; lasers spawn from the game's own `LazerPatterns.xml` (distance-weighted, warning then lethal, touching one resets the run); HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
 
-SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `pattern.txt`, `lasers.txt`.
+SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `music.ogg` (any `Music_*.ogg` from the assets), `pattern.txt`, `lasers.txt`.
 
     python3 -I wii/tools/mkspr.py jj_sprites/Barry.png barry.spr
     python3 -I wii/tools/mkspr.py jj_sprites/CoinAlt.png coin.spr
@@ -49,5 +49,5 @@ Tested in Dolphin (needs an MBR-partitioned FAT32 `sd.raw` and `[General] WiiSDC
 
 ### Still to do for the full game
 Barry's animation (Spine/`.atlas` text + xml components), UI screens (`.uiscreen`), levels (`xml/Levels`, `LevelPacing.xml`),
-obstacles/vehicles/bosses (100 Lua scripts in `scripts/`: needs an embedded Lua), audio (ogg via libvorbisidec),
+obstacles/vehicles/bosses (100 Lua scripts in `scripts/`: needs an embedded Lua), sound effects (music streams already via Tremor + ASND on a thread; `sound/*.ogg` has 1944 effects),
 save data, flag-6 `.tex` format, the unnamed atlas sprites, memory budget (88 MB RAM, ~800 MB of assets).
