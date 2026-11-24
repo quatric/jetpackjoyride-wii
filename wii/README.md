@@ -348,3 +348,7 @@ The sprite files loaded at start now total about 4.4 MB (largest: `mech.spr` 0.5
 ### Music switching
 
 The music thread can now change tracks (`audio_switch`): `Music_Shop` while the shop is open, `Music_Colossatron` during the boss, `Music_Hog` while riding the Hog, otherwise `Music_Level` (all from the APK; which plays when is my mapping, and the title has no `Music_Menu` because the APK ships it only as m4a). The test build logs each switch: shop at tick 91, back at 171, boss at 781, back at 1194, and the run finished normally. I could not listen to Dolphin's audio, so that the right track is audible is unconfirmed.
+
+### Obstacle pacing
+
+The gap between laser patterns used a fixed 60 frames. It now follows `LevelPacing.xml`: `MIN/MAX_SPAWN_INTERVAL` per distance band (280-470 at the start, tightening to 150-230 from 9500 m). I take those units as the game's own pixels, so x1.5 to ours and /4 for the 4 px per frame scroll, giving roughly 105-176 frames at the start; that unit reading is a guess, and the file also names the gates, missile and vehicle tables, whose spacing I did not change. Runs in the test build still complete (894 m and 748 m).

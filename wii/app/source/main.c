@@ -140,6 +140,11 @@ static void loadLasers(void) {   /* lines: P time n y.. np (startDistance weight
 
 static float patWeight(const Pat *t, int dist) { float w = 0; for (int i = 0; i < t->np; i++) if (t->sd[i] <= dist) w = t->w[i]; return w; }
 
+static int spawnWait(int dist) {   /* LevelPacing.xml MIN/MAX_SPAWN_INTERVAL by distance (units taken as game px: x1.5 to our px, /4 px per frame); applied between laser patterns */
+    static const short mn[16] = {280, 250, 220, 200, 200, 200, 200, 200, 190, 190, 180, 180, 170, 170, 160, 150}, mx[16] = {470, 420, 390, 350, 320, 280, 275, 270, 265, 260, 255, 250, 245, 240, 235, 230};
+    int k = dist < 2500 ? 0 : (dist - 2500) / 500 + 1; if (k > 15) k = 15;
+    return (int)((mn[k] + rand() % (mx[k] - mn[k] + 1)) * 1.5f / 4);
+}
 static int pickPattern(int dist) {   /* weighted by the game's own distance-based probabilities */
     float tot = 0; for (int i = 0; i < npat; i++) tot += patWeight(&pats[i], dist);
     if (tot <= 0) return -1;
@@ -419,7 +424,7 @@ int main(int argc, char **argv) {
         frame++;
         dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
         if (!dead) {
-            if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = 60; } }
+            if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = spawnWait(dist); } }
             else if (++ptick > pats[cur].time + 60) cur = -1;
             if (cur >= 0 && ptick > 60) for (int i = 0; i < pats[cur].n; i++) {
                 float ly = 240 - pats[cur].y[i] * 1.6f;
