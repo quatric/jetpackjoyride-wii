@@ -71,3 +71,10 @@ decompilation (Ghidra address minus 0x100000 = file offset), with Lua only worth
 Lua 5.3 sources are available locally (e.g. `MAME4Wii/mame/3rdparty/genie/src/host/lua-5.3.0`) if needed.
 
 `make AUTOTEST=1` in `wii/app` builds a self-playing version (fake A presses) so the loop can be checked in headless Dolphin.
+
+### Memory budget (measured)
+
+5323 textures = 338 Mpx. Converted for GX that is ~677 MB as RGB5A3 or ~169 MB as CMPR (4 bpp), plus 56 MB of ogg: the whole
+set fits on an SD card. RAM only has to hold one level's atlases at a time (a few MB in CMPR) with audio streamed, so the
+"800 MB vs 88 MB" worry is a streaming problem, not a blocker. Biggest consumers: levels 136 Mpx, menus 79 Mpx, characters 30 Mpx.
+The slice currently uses RGBA8 (4 bytes/px), which is fine for the handful of sprites it loads but not for a full level set.
