@@ -314,3 +314,7 @@ A second gadget, Slow Missiles (real icon; missile speed x0.72, the `value1` in 
 ### Controls
 
 A, B, 1 or 2 hold the jetpack (and start or restart a run); PLUS pauses; HOME quits. In the pause menu and on the title screen, the d-pad selects (left/right in pause, up/down for START/SHOP and between shop items), A or 2 confirms, B or 1 backs out of the shop. Menu directions are the raw `WPAD_BUTTON_UP/DOWN/LEFT/RIGHT` bits, so with the Wii Remote held sideways the physical d-pad directions are rotated relative to what is drawn; that has not been tried on a real remote, and a Classic Controller or GameCube pad should behave as drawn.
+
+### Shop: Dud Missiles
+
+Third gadget, Dud Missiles (real icon; the first 3 missiles of each run do no harm, `perks.xml` value1 3), 450 coins (price mine). The shop now cycles three items with up/down; `save.txt` bit 4 marks it. The fake-input build buys all three from 1500 coins (150 left, save ends with `7`).
