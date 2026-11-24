@@ -182,14 +182,22 @@ static void drawText(float x, float y, float sc, const char *t) {
 typedef struct { float speed, yoff, total; int n; Spr t[MAXT]; int w[MAXT], h[MAXT]; } Layer;
 static Layer layer[MAXL]; static int nlayer;
 
-static void loadLevel(void) {   /* level.txt from mklevel.py: S speed yoff n / T file w h; sets are back-to-front */
-    char pp[128], ln[128]; snprintf(pp, sizeof pp, "%slevel.txt", dir);
+static int nLevels = 1;
+
+static void freeLevel(void) {
+    for (int i = 0; i < nlayer; i++) for (int k = 0; k < layer[i].n; k++) { free(layer[i].t[k].data); layer[i].t[k].data = NULL; }
+    nlayer = 0;
+}
+
+static void loadLevel(int idx) {   /* levels/<idx>/level.txt from mklevel.py: S speed yoff n / T file w h; sets are back-to-front */
+    freeLevel();
+    char pp[128], ln[128]; snprintf(pp, sizeof pp, "%slevels/%d/level.txt", dir, idx);
     FILE *f = fopen(pp, "r"); if (!f) return;
     Layer *L = NULL; int want = 0;
     while (fgets(ln, sizeof ln, f)) {
         if (ln[0] == 'S' && nlayer < MAXL) { L = &layer[nlayer++]; memset(L, 0, sizeof *L); sscanf(ln, "S %f %f %d", &L->speed, &L->yoff, &want); }
         else if (ln[0] == 'T' && L && L->n < MAXT) {
-            char fn[32]; int w, h; if (sscanf(ln, "T %31s %d %d", fn, &w, &h) == 3 && loadSpr(&L->t[L->n], fn)) { L->w[L->n] = w; L->h[L->n] = h; L->total += w * 1.5f; L->n++; }
+            char fn[32], full[80]; int w, h; if (sscanf(ln, "T %31s %d %d", fn, &w, &h) == 3 && (snprintf(full, sizeof full, "levels/%d/%s", idx, fn), loadSpr(&L->t[L->n], full))) { L->w[L->n] = w; L->h[L->n] = h; L->total += w * 1.5f; L->n++; }
         }
     }
     fclose(f);
@@ -252,7 +260,8 @@ int main(int argc, char **argv) {
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
     loadMissile(); loadZappers(); loadFont();
-    loadLevel();
+    { char cp[128]; snprintf(cp, sizeof cp, "%slevels/count.txt", dir); FILE *cf = fopen(cp, "r"); if (cf) { if (fscanf(cf, "%d", &nLevels) != 1 || nLevels < 1) nLevels = 1; fclose(cf); } }
+    int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
     int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet};
@@ -269,7 +278,7 @@ int main(int argc, char **argv) {
         int dist = 0;
         if (btnDown() & WPAD_BUTTON_HOME) break;
         if (state != 1) {
-            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; state = 1; }
+            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }

@@ -36,7 +36,7 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 Builds with devkitPPC/libogc plus sibling checkouts of libwiiinput and libwiiupdate (`make` in each, then `make` here).
 Title screen (press A/B/1/2 to start), game-over screen with distance and best; hold A/B/1/2 to fly; coins come from the game's 27 standard coin patterns, chained at random heights; lasers spawn from the game's own `LazerPatterns.xml` (distance-weighted, warning then lethal, touching one resets the run); rotating/pulsing zappers (patterns and distance weights from `ObstaclePatterns.xml`, placeholder art); missiles (alert that tracks Barry, then a fast shot; constants from `MissileProbability.xml`); HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
 
-SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `missile.spr`, `alert.spr`, `missile.txt`, `bolt.spr`, `zappers.txt`, `level.txt` + `lv<set>_<i>.spr` (background sets read from a real level file, e.g. `xml/LevelFiles/warehouse.xml`, with the game's parallax speed and y offset; CMPR tiles), `flame.spr` (effects/jetpack/standardflame, 4x2 grid of 16x32), `body.spr` + `head.spr` (Barry's default costume, `textures/Characters/Barry/defaultBody|defaultHead`: 4x8 grids of 32x32 frames; rows 0/1/2 used for run/thrust/fall, head offset is a guess), `font.spr` + `font.fnt` (the game's `vehicle_font`, BMFont text format; HUD shows distance and coins), `music.ogg` (any `Music_*.ogg` from the assets), and sound effects copied from `sound/` as `coin.ogg` (coin_pickup_1), `hurt.ogg` (Player_hurt_1), `laserw.ogg` (laser_warning), `missw.ogg` (missile_warning), `missl.ogg` (missile_launch), `jet.ogg` (jetpack_blast_lp, a stand-in for the default jetpack loop), `pattern.txt`, `lasers.txt`.
+SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `missile.spr`, `alert.spr`, `missile.txt`, `bolt.spr`, `zappers.txt`, `levels/count.txt` + `levels/<n>/level.txt` + `lv<set>_<i>.spr` (one folder per level, the next level loads on each restart; background sets read from a real level file, e.g. `xml/LevelFiles/warehouse.xml`, with the game's parallax speed and y offset; CMPR tiles), `flame.spr` (effects/jetpack/standardflame, 4x2 grid of 16x32), `body.spr` + `head.spr` (Barry's default costume, `textures/Characters/Barry/defaultBody|defaultHead`: 4x8 grids of 32x32 frames; rows 0/1/2 used for run/thrust/fall, head offset is a guess), `font.spr` + `font.fnt` (the game's `vehicle_font`, BMFont text format; HUD shows distance and coins), `music.ogg` (any `Music_*.ogg` from the assets), and sound effects copied from `sound/` as `coin.ogg` (coin_pickup_1), `hurt.ogg` (Player_hurt_1), `laserw.ogg` (laser_warning), `missw.ogg` (missile_warning), `missl.ogg` (missile_launch), `jet.ogg` (jetpack_blast_lp, a stand-in for the default jetpack loop), `pattern.txt`, `lasers.txt`.
 
     python3 -I wii/tools/mkspr.py jj_sprites/Barry.png barry.spr
     python3 -I wii/tools/mkspr.py jj_sprites/CoinAlt.png coin.spr
@@ -47,7 +47,7 @@ SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `be
     python3 -I wii/tools/mkspr.py jj_sprites/missileAlert.png alert.spr 0 0 256 64
     python3 -I wii/tools/mkzappers.py <assets>/xml/ObstaclePatterns.xml zappers.txt
     python3 -I wii/tools/mkspr.py jj_sprites/electricbolt.png bolt.spr
-    python3 -I wii/tools/mklevel.py <assets>/xml/LevelFiles/warehouse.xml jj_sprites outdir   # then copy level.txt and lv*.spr
+    python3 -I wii/tools/mklevel.py <assets>/xml/LevelFiles/warehouse.xml jj_sprites levels/0   # repeat per level (1, 2, ...), then echo N > levels/count.txt
     python3 -I wii/tools/mkspr.py jj_sprites/textures/effects/jetpack/standardflame.png flame.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultBody.png body.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultHead.png head.spr
@@ -82,3 +82,5 @@ The slice currently uses RGBA8 (4 bytes/px), which is fine for the handful of sp
 `mkspr.py --cmpr` writes GX_TF_CMPR (`SPR1`, 4 bits/px, 1-bit alpha) and the app loads both `SPR0` (RGBA8) and `SPR1`.
 The warehouse background tiles use it (32 KB instead of 256 KB each); verified visually in Dolphin. Use it for opaque or
 hard-edged art; soft-alpha sprites (glows, flame) should stay RGBA8 or move to RGB5A3.
+
+Of the 56 level files with backgrounds, 34 have every background tile resolved to a named sprite (the rest need more atlas names).
