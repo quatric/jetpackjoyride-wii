@@ -280,3 +280,7 @@ Tenth vehicle (`ship.spr` from `starship/starship.png`): one static 232x98 frame
 ### Sleigh
 
 Eleventh vehicle (`sled.spr` from `sled/sleigh.png`): a real 4x2 animation sheet of 76x64 frames, drawn without the reindeer (separate 256x256 sheet, not analysed). Hog physics, a guess. Checked in Dolphin.
+
+### Jetski
+
+Twelfth vehicle (`jski.spr` from `Jetski/jetski.png`): one static 64x32 frame; the handle and the water are not drawn, and the rider is not shown. Hog physics, a guess. Checked in Dolphin.

@@ -276,7 +276,7 @@ static float segDist(float px, float py, float ax, float ay, float bx, float by)
 /* Mech (vehicles/Jetlane/Mech.xml): gravity .36, initial boost 6, boost .45 for 20 frames; absorbs one hit */
 static const int mechDrive[14] = {6,6,1,1,2,2,2,3,3,4,4,5,5,5};
 /* per vehicle: sheet columns, frame px, padded sheet px, gravity, initial boost, boost (Hog.xml / Mech.xml) */
-static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; const char *spr; } VEH[11] = {
+static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; const char *spr; } VEH[12] = {
     {6, 85, 85, 512, 256, 0.36f, 6.0f, 0.45f, 20, 1, "mech.spr"}, {4, 64, 64, 256, 448, 0.30f, 6.5f, 0.60f, 12, 1, "hog.spr"},
     {6, 39, 54, 236, 164, 0.20f, 5.0f, 0.00f, 1, 10, "bird.spr"},
     {6, 42, 42, 252, 168, 0.60f, 0.0f, 0.0f, 0, 0, "gsuit.spr"},
@@ -286,8 +286,9 @@ static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; 
     {1, 256, 128, 256, 128, 0.30f, 6.5f, 0.60f, 14, 1, "ecto.spr"},
     {1, 157, 62, 160, 64, 0.30f, 6.5f, 0.60f, 14, 1, "dlr.spr"},
     {1, 232, 98, 232, 100, 0.30f, 6.5f, 0.60f, 14, 1, "ship.spr"},
-    {4, 76, 64, 304, 128, 0.30f, 6.5f, 0.60f, 14, 1, "sled.spr"} };   /* Sleigh: real 4x2 animation sheet, reindeer not drawn; Hog-like physics (guess) */   /* Starship: one static frame; Hog-like physics (guess) */   /* DeLorean: one static frame; Hog-like physics (guess) */   /* Ecto-1: one static frame, no rider; Hog-like physics (guess) */   /* Ice Skates: real 4x4 sheet, rider baked in; Hog-like physics (guess) */   /* Hoverboard: sheet is a real 4x3 grid with the rider baked in; the physics are the Hog's, a guess */   /* Teleporter: press = vanish and reappear at a random height; sheet is real, timings are mine */   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
-static const int vpick[11] = {6, 1, 13, 1, 1, 1, 1, 1, 1, 1, 1};
+    {4, 76, 64, 304, 128, 0.30f, 6.5f, 0.60f, 14, 1, "sled.spr"},
+    {1, 64, 32, 64, 32, 0.30f, 6.5f, 0.60f, 14, 1, "jski.spr"} };   /* Jetski: one static 64x32 frame, no rider or handle; Hog-like physics (guess) */   /* Sleigh: real 4x2 animation sheet, reindeer not drawn; Hog-like physics (guess) */   /* Starship: one static frame; Hog-like physics (guess) */   /* DeLorean: one static frame; Hog-like physics (guess) */   /* Ecto-1: one static frame, no rider; Hog-like physics (guess) */   /* Ice Skates: real 4x4 sheet, rider baked in; Hog-like physics (guess) */   /* Hoverboard: sheet is a real 4x3 grid with the rider baked in; the physics are the Hog's, a guess */   /* Teleporter: press = vanish and reappear at a random height; sheet is real, timings are mine */   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
+static const int vpick[12] = {6, 1, 13, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 static void loadSave(int *best, int *total) {   /* save.txt: best distance, lifetime coins */
     char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
     int b = 0, t = 0; if (fscanf(f, "%d %d", &b, &t) == 2 && b >= 0 && t >= 0) { *best = b; *total = t; } fclose(f);
@@ -320,8 +321,8 @@ int main(int argc, char **argv) {
     int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
-    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[11], sVj[11], sGC, sTP, sSt1, sSt2, sLand, sZap, sVDie, sJS, sJE, sC2, sC3, sMS, sLS, sME; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg", "bmount.ogg", "bflap.ogg", "jstart.ogg", "jstop.ogg", "coin2.ogg", "coin3.ogg", "mstep.ogg", "lstart.ogg", "mexp.ogg", "gchg.ogg", "cft.ogg", "step1.ogg", "step2.ogg", "land.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie, &sVm[2], &sVj[2], &sJS, &sJE, &sC2, &sC3, &sMS, &sLS, &sME, &sGC, &sTP, &sSt1, &sSt2, &sLand};
-        for (int i = 0; i < 26; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[3] = sVm[0]; sVj[3] = sGC; sVm[4] = sVm[0]; sVj[4] = sTP; sVm[5] = sVm[1]; sVj[5] = sVj[1]; sVm[6] = sVm[1]; sVj[6] = sVj[1]; sVm[7] = sVm[1]; sVj[7] = sVj[1]; sVm[8] = sVm[1]; sVj[8] = sVj[1]; sVm[9] = sVm[1]; sVj[9] = sVj[1]; sVm[10] = sVm[1]; sVj[10] = sVj[1]; }
+    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[12], sVj[12], sGC, sTP, sSt1, sSt2, sLand, sZap, sVDie, sJS, sJE, sC2, sC3, sMS, sLS, sME; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg", "bmount.ogg", "bflap.ogg", "jstart.ogg", "jstop.ogg", "coin2.ogg", "coin3.ogg", "mstep.ogg", "lstart.ogg", "mexp.ogg", "gchg.ogg", "cft.ogg", "step1.ogg", "step2.ogg", "land.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie, &sVm[2], &sVj[2], &sJS, &sJE, &sC2, &sC3, &sMS, &sLS, &sME, &sGC, &sTP, &sSt1, &sSt2, &sLand};
+        for (int i = 0; i < 26; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[3] = sVm[0]; sVj[3] = sGC; sVm[4] = sVm[0]; sVj[4] = sTP; sVm[5] = sVm[1]; sVj[5] = sVj[1]; sVm[6] = sVm[1]; sVj[6] = sVj[1]; sVm[7] = sVm[1]; sVj[7] = sVj[1]; sVm[8] = sVm[1]; sVj[8] = sVj[1]; sVm[9] = sVm[1]; sVj[9] = sVj[1]; sVm[10] = sVm[1]; sVj[10] = sVj[1]; sVm[11] = sVm[1]; sVj[11] = sVj[1]; }
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
@@ -329,7 +330,7 @@ int main(int argc, char **argv) {
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
-    Spr mechS[11] = {{0}}; int haveV[11], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 11; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
+    Spr mechS[12] = {{0}}; int haveV[12], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 12; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
@@ -364,11 +365,11 @@ int main(int argc, char **argv) {
           }
           wasHeld = held; }
         y += vy; if (inv) inv--;
-        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[11] = {20, 20, 50, 20, 20, 20, 20, 20, 20, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
-            int tw = 0; for (int i = 0; i < 11; i++) if (haveV[i]) tw += vw[i];
-            if (tw) { int r = rand() % tw; for (int i = 0; i < 11; i++) if (haveV[i] && (r -= vw[i]) < 0) { vt = i; break; } nV = 1; } else mpick = -999; }
+        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[12] = {20, 20, 50, 20, 20, 20, 20, 20, 20, 20, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
+            int tw = 0; for (int i = 0; i < 12; i++) if (haveV[i]) tw += vw[i];
+            if (tw) { int r = rand() % tw; for (int i = 0; i < 12; i++) if (haveV[i] && (r -= vw[i]) < 0) { vt = i; break; } nV = 1; } else mpick = -999; }
 #ifdef AUTOTEST
-        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 11] ? lvl % 11 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
+        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 12] ? lvl % 12 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; sfx_play(sVm[vt], 0); } }
@@ -465,7 +466,7 @@ int main(int argc, char **argv) {
             else if (vt == 5) f = g ? 1 + (frame / 4) % 4 : 5 + (frame / 5) % 4;
             else if (vt) f = g ? 1 + (frame / 4) % 4 : 5 + (frame / 4) % 4;
             else f = g ? mechDrive[(frame / 2) % 14] : held && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
-            float sz = vt == 1 ? 130 : vt == 5 ? 110 : vt == 6 ? 120 : vt == 7 ? 100 : vt == 8 ? 80 : vt == 9 ? 80 : vt == 10 ? 90 : vt == 2 ? 110 : vt == 3 ? 100 : 150, k = sz / VEH[vt].fh, w = sz * VEH[vt].fw / VEH[vt].fh; mechQuad(&mechS[vt], vt, 20, y + 100, sz, f); mflip = 0;
+            float sz = vt == 1 ? 130 : vt == 5 ? 110 : vt == 6 ? 120 : vt == 7 ? 100 : vt == 8 ? 80 : vt == 9 ? 80 : vt == 10 ? 90 : vt == 11 ? 70 : vt == 2 ? 110 : vt == 3 ? 100 : 150, k = sz / VEH[vt].fh, w = sz * VEH[vt].fw / VEH[vt].fh; mechQuad(&mechS[vt], vt, 20, y + 100, sz, f); mflip = 0;
             if (haveRig && vt < 3) {   /* head placement from Vehicle*Data.xml (offset from frame centre; rotation ignored) */
                 const short *h = vt == 2 ? VHEAD2[f] : vt ? VHEAD1[f] : VHEAD0[f]; int c = (h[2] - 1) % 4, r = (h[2] - 1) / 4; float hs = 32 * k;
                 quadRotUV(&bHead, 20 + w / 2 + h[0] * k, y + 100 - sz / 2 + h[1] * k, hs, hs, (float)h[3], c / 4.f, r / 8.f, (c + 1) / 4.f, (r + 1) / 8.f);

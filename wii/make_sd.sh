@@ -25,6 +25,7 @@ spr "$V/Ecto/Ecto/ecto.png" "$O/ecto.spr"
 spr "$V/delorean/delorean/delorean.png" "$O/dlr.spr"
 spr "$V/starship/starship/starship.png" "$O/ship.spr"
 spr "$V/sled/sleigh.png" "$O/sled.spr"
+spr "$V/Jetski/jetski.png" "$O/jski.spr"
 tmp=$(mktemp -d)   # title logo, downscaled so it stays small in RAM
 python3 -I - "$P/textures/logo/default" "$tmp" <<'PY'
 import sys
