@@ -302,3 +302,7 @@ The app's pause screen now shows those three buttons at 0.6 scale: left/right se
 ### Title START button
 
 The title screen's prompt is now the game's own `startPressed` button from `TitleScreen_SplitTest.uiscreen` (332x96 `buttonBacking`, the green glow bar at x -144, "START" at x +38), drawn at 0.75. The glow bar sheet is one 64x128 image, not a play icon. No Shop/Events buttons yet; those need their own screens. Seen in Dolphin; the results screen (`ResultsScreen_New`, 1958 components of leaderboards, social and rewards panels) was looked at and is not a practical next port.
+
+### Shop: Coin Magnet
+
+The title screen has a SHOP button under START (up/down selects, A opens). The shop sells one gadget, the Coin Magnet, with the real icon (`perks.xml` lists 19 gadgets but gives no prices, so the price of 500 coins is mine, paid from the lifetime coins in `save.txt`, which now has a third number for ownership). With the magnet owned, coins within about 130 px of the player are collected. Drawing checked in Dolphin; buying and the magnet effect were not exercised by the fake-input build.
