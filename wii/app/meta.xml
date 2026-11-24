@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>Jetpack Joyride (Wii)</name>
+  <coder>quatric</coder>
+  <version>0.1.0</version>
+  <release_date>20261124000000</release_date>
+  <short_description>Unofficial Wii port of Jetpack Joyride</short_description>
+  <long_description>A from-scratch reimplementation using assets you extract yourself from your own copy of the game (see wii/README.md). Not affiliated with Halfbrick.</long_description>
+</app>

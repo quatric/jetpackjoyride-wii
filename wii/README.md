@@ -110,3 +110,9 @@ JUMP_COUNT 10) is the third vehicle: every press flaps, up to 10 times before la
 boost-frame count (Mech 20, Hog 12, Bird 1) and jump count. `mkspr.py` makes `bird.spr` from `vehicleBird.png`;
 `mkvhead.py` takes a third file and reuses the nearest lower frame where the data is sparse. Sounds for the Bird
 reuse the Hog's.
+
+## Packaging
+
+`wii/package.sh` makes a Homebrew Channel zip (`apps/jetpackjoyride/boot.dol` + `meta.xml`) for releases, which is what
+libwiiupdate installs. The game assets are extracted from the APK and must not be redistributed, so the default zip has
+none; `wii/package.sh <sd-layout folder>` bundles them for your own SD card only.

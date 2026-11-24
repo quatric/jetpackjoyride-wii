@@ -20,3 +20,4 @@ assets.nxidx.tmp
 *.nro
 /dist/
 /.build-release.log
+wii/*.zip
