@@ -116,6 +116,14 @@ static int pickPattern(int dist) {   /* weighted by the game's own distance-base
     return -1;
 }
 
+static int mStart = 200; static float mProb = 15, mChase = 1.2f, mSpeed = 10;   /* defaults = MissileProbability.xml */
+static void loadMissile(void) {
+    char pp[128], ln[128]; snprintf(pp, sizeof pp, "%smissile.txt", dir);
+    FILE *f = fopen(pp, "r"); if (!f) return;
+    if (fgets(ln, sizeof ln, f)) sscanf(ln, "M %d %f %f %f", &mStart, &mProb, &mChase, &mSpeed);
+    fclose(f);
+}
+
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
     { FILE *t = fopen("sd:/apps/jetpackjoyride/pattern.txt", "r"); if (t) fclose(t); else dir = "fat:/apps/jetpackjoyride/"; } INPUT_Init(); INPUT_SetScreenSize(W, H);
@@ -127,7 +135,9 @@ int main(int argc, char **argv) {
     loadPattern(); loadLasers();
     { char mp[160]; snprintf(mp, sizeof mp, "%smusic.ogg", dir); audio_start(mp); }
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
-    int cur = -1, ptick = 0, wait = 90, dead = 0;
+    Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
+    loadMissile();
+    int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0; (void)score;
@@ -140,7 +150,7 @@ int main(int argc, char **argv) {
         y += vy;
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
-        if (dead) { if (--dead == 0) { y = 300; vy = 0; scroll = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; } }
+        if (dead) { if (--dead == 0) { y = 300; vy = 0; scroll = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; } }
         else scroll += 4;
         frame++;
         int dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
@@ -152,12 +162,23 @@ int main(int argc, char **argv) {
                 if (fabsf(ly - (y + 45)) < 22) { dead = 60; break; }
             }
         }
+        if (!dead && cur < 0) {   /* missiles share the screen with lasers only when no laser pattern is active */
+            if (mst == 0 && dist >= mStart && --mwait <= 0) { mwait = 120; if (rand() % 100 < mProb) { mst = 1; mtick = 0; my = y + 45; } }
+            else if (mst == 1) { float t = y + 45; my += fminf(fmaxf(t - my, -mChase * 2), mChase * 2); if (++mtick > 90) { mst = 2; mx = W; } }
+        }
+        if (mst == 2 && !dead) {
+            mx -= mSpeed;
+            if (mx < 150 && mx + 64 > 60 && fabsf(my - (y + 45)) < 28) dead = 60;
+            if (mx < -64) { mst = 0; }
+        }
         GX_InvVtxCache(); GX_InvalidateTexAll();
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
             if (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90) { cgot[i] = 1; score++; continue; }
             int fr = (frame / 4 + i) & 7; quad(&coin, px, cy[i], 16, 16, fr / 8.f, 0, (fr + 1) / 8.f, 1);
         }
+        if (mst == 1 && (mtick / 8) % 2 == 0) { int fr = (frame / 8) & 3; quad(&alert, W - 70, my - 32, 64, 64, fr / 4.f, 0, (fr + 1) / 4.f, 1); }
+        if (mst == 2) { int fr = (frame / 4) & 3; quad(&missile, mx, my - 16, 64, 32, fr / 4.f, 0, (fr + 1) / 4.f, 1); }
         if (cur >= 0) for (int i = 0; i < pats[cur].n; i++) {
             float ly = 240 - pats[cur].y[i] * 1.6f; int live = ptick > 60;
             if (!live && (ptick / 6) & 1) continue;                      /* flashing warning */

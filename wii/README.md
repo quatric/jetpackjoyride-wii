@@ -34,14 +34,17 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 ## Wii app (`wii/app`) - first playable slice
 
 Builds with devkitPPC/libogc plus sibling checkouts of libwiiinput and libwiiupdate (`make` in each, then `make` here).
-Hold A/B/1/2 to fly; coins come from a pattern file; lasers spawn from the game's own `LazerPatterns.xml` (distance-weighted, warning then lethal, touching one resets the run); HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
+Hold A/B/1/2 to fly; coins come from a pattern file; lasers spawn from the game's own `LazerPatterns.xml` (distance-weighted, warning then lethal, touching one resets the run); missiles (alert that tracks Barry, then a fast shot; constants from `MissileProbability.xml`); HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
 
-SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `music.ogg` (any `Music_*.ogg` from the assets), `pattern.txt`, `lasers.txt`.
+SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `missile.spr`, `alert.spr`, `missile.txt`, `music.ogg` (any `Music_*.ogg` from the assets), `pattern.txt`, `lasers.txt`.
 
     python3 -I wii/tools/mkspr.py jj_sprites/Barry.png barry.spr
     python3 -I wii/tools/mkspr.py jj_sprites/CoinAlt.png coin.spr
     python3 -I wii/tools/mkspr.py jj_sprites/laserWarning.png beam.spr
     python3 -I wii/tools/mkspr.py jj_sprites/laser.png emit.spr 0 0 64 85
+    python3 -I wii/tools/mkmissile.py <assets>/xml/MissileProbability.xml missile.txt
+    python3 -I wii/tools/mkspr.py jj_sprites/missile.png missile.spr
+    python3 -I wii/tools/mkspr.py jj_sprites/missileAlert.png alert.spr 0 0 256 64
     python3 -I wii/tools/mklasers.py <assets>/xml/LazerPatterns.xml lasers.txt
     cp <assets>/patterns/cashDash1.txt pattern.txt
 
