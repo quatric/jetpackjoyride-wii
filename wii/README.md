@@ -385,3 +385,7 @@ Items 8 and 9, both with their real icons and both my own readings of `perks.xml
 ### Shop: X-Ray Specs and Brick Bones
 
 Items 10 and 11, real icons, my own effects: **X-Ray Specs** (`PERK_SHOW_VEHICLES`) makes vehicle crates come twice as soon (the wait between them is halved); **Brick Bones** (`brick` icon, the `DEATH_BOUNCE_DAMPENING_BRICK` 0.6 tunable) makes the death tumble bounce only a quarter as much. 500 and 300 coins (mine); `save.txt` bits 512 and 1024. The fake-input build buys all eleven from 8000 coins (the save ends with 2450 coins and `2047`); the effects were not isolated in a test.
+
+### Shop: Fruit Missiles
+
+Item 12, real `fruitMissile` icon (`PERK_FRUIT_MISSILES`, value 3 in `perks.xml`): every missile you dodge pays 3 coins. That is my own reading; the APK does not say what the perk does. 400 coins (mine), `save.txt` bit 2048. The fake-input build buys all twelve from 9000 coins (save ends with 3706 coins and `4095`); the payout itself was not isolated in a test. Left unbuilt from `perks.xml`: Nerd Repellent, Boost Machine, Token Magnet, Token Gift, Lucky Token, Flying Pig, Robot Dog and Icy Exterior, which rely on tokens, scientists, pets or a slot machine that this port does not have.
