@@ -83,4 +83,4 @@ The slice currently uses RGBA8 (4 bytes/px), which is fine for the handful of sp
 The warehouse background tiles use it (32 KB instead of 256 KB each); verified visually in Dolphin. Use it for opaque or
 hard-edged art; soft-alpha sprites (glows, flame) should stay RGBA8 or move to RGB5A3.
 
-Of the 56 level files with backgrounds, 34 have every background tile resolved to a named sprite (the rest need more atlas names).
+Of the 56 level files with backgrounds, 34 have every background tile resolved to a named sprite (the other 22, such as the aquarium, St Patrick's, pirate and Metal Slug variants, name tiles that are in no atlas and not on disk: that art is not in this APK, most likely downloaded as event/OTA content, so 34 is the ceiling for the base install).
