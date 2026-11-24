@@ -21,3 +21,4 @@ assets.nxidx.tmp
 /dist/
 /.build-release.log
 wii/*.zip
+__pycache__/

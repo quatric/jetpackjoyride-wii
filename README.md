@@ -3,6 +3,8 @@
 <img src="extras/banner.png" alt="Jetpack Joyride banner" width="35%">
 
 </div>
+> **Wii port:** this repository now lives at `quatric/jetpackjoyride-wii` and is a standalone project, no longer a GitHub fork. The Wii app, its asset-extraction tools and notes are in [`wii/`](wii/README.md). The rest of the tree is the original Switch port by NaGaa95, kept for reference.
+
 <h1 align="center">Jetpack Joyride - Nintendo Switch port</h1>
 
 This is a wrapper/port of the Android ARM64 version of Jetpack Joyride (`1.104.1`). <br/>
