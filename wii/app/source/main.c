@@ -96,17 +96,18 @@ static void gfxInit(void) {
     Mtx m; guMtxIdentity(m); GX_LoadPosMtxImm(m, GX_PNMTX0);
 }
 
-#define MAXC 4096
+#define MAXC 8192
 static float cx[MAXC], cy[MAXC]; static u8 cgot[MAXC]; static int nc; static float patW;
 
-static void loadPattern(void) {   /* '1' cells become coins; blank lines are skipped */
+static void loadPattern(void) {   /* '1' cells become coins; '=' starts the next chained pattern at a random height */
     char pp[128]; snprintf(pp, sizeof pp, "%spattern.txt", dir);
-    FILE *f = fopen(pp, "r"); char ln[256]; int row = 0; if (!f) return;
+    FILE *f = fopen(pp, "r"); char ln[256]; int row = 0; float xoff = 0, yoff = 60; if (!f) return;
     while (fgets(ln, sizeof ln, f)) {
+        if (ln[0] == '=') { xoff = patW + 350; yoff = 40 + rand() % 130; row = 0; continue; }
         if (ln[0] == '\n' || ln[0] == '\r') continue;
         for (int c = 0; ln[c] && ln[c] != '\n' && ln[c] != '\r'; c++) {
-            if (ln[c] == '1' && nc < MAXC) { cx[nc] = c * 20.f; cy[nc] = 120 + row * 22.f; nc++; }
-            if (c * 20.f + 20 > patW) patW = c * 20.f + 20;
+            if (ln[c] == '1' && nc < MAXC) { cx[nc] = xoff + c * 20.f; cy[nc] = yoff + row * 22.f; nc++; }
+            if (xoff + c * 20.f + 20 > patW) patW = xoff + c * 20.f + 20;
         }
         row++;
     }
