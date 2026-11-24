@@ -249,9 +249,12 @@ static float segDist(float px, float py, float ax, float ay, float bx, float by)
 
 /* Mech (vehicles/Jetlane/Mech.xml): gravity .36, initial boost 6, boost .45 for 20 frames; absorbs one hit */
 static const int mechDrive[14] = {6,6,1,1,2,2,2,3,3,4,4,5,5,5};
-static void mechQuad(Spr *s, float x, float yb, float sz, int f) {
-    int c = (f - 1) % 6, r = (f - 1) / 6;
-    quad(s, x, yb - sz, sz, sz, c * 85.f / 512, r * 85.f / 256, (c + 1) * 85.f / 512, (r + 1) * 85.f / 256);
+/* per vehicle: sheet columns, frame px, padded sheet px, gravity, initial boost, boost (Hog.xml / Mech.xml) */
+static const struct { int cols, fw, pw, ph; float g, ib, b; const char *spr; } VEH[2] = {
+    {6, 85, 512, 256, 0.36f, 6.0f, 0.45f, "mech.spr"}, {4, 64, 256, 448, 0.30f, 6.5f, 0.60f, "hog.spr"} };
+static void mechQuad(Spr *s, int vt, float x, float yb, float sz, int f) {
+    int c = (f - 1) % VEH[vt].cols, r = (f - 1) / VEH[vt].cols, fw = VEH[vt].fw;
+    quad(s, x, yb - sz, sz, sz, c * (float)fw / VEH[vt].pw, r * (float)fw / VEH[vt].ph, (c + 1) * (float)fw / VEH[vt].pw, (r + 1) * (float)fw / VEH[vt].ph);
 }
 #define HIT() do { if (mech == 2) { mech = 0; inv = 90; sfx_play(sHurt, 0); } else if (!inv) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
@@ -280,7 +283,7 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
-    Spr mechS = {0}; int haveMech = loadSpr(&mechS, "mech.spr");
+    Spr mechS[2] = {{0}, {0}}; int haveMech = loadSpr(&mechS[0], "mech.spr"), haveHog = loadSpr(&mechS[1], "hog.spr"), vt = 0;
     int mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
     for (;;) {
@@ -294,8 +297,8 @@ int main(int argc, char **argv) {
         }
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
           if (mech == 2) {
-              if (held && !wasHeld && y >= H - 121) { vy = -9; bf = 20; }
-              vy += 0.54f; if (held && bf > 0) { vy -= 0.68f; bf--; } if (!held) bf = 0;
+              if (held && !wasHeld && y >= H - 121) { vy = -1.5f * VEH[vt].ib; bf = 20; }
+              vy += 1.5f * VEH[vt].g; if (held && bf > 0) { vy -= 1.5f * VEH[vt].b; bf--; } if (!held) bf = 0;
               if (vy > 12) vy = 12;
           } else {
               vy += (held ? -0.9f : 0.6f);
@@ -304,9 +307,9 @@ int main(int argc, char **argv) {
           }
           wasHeld = held; }
         y += vy; if (inv) inv--;
-        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) mpick = W;
+        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; vt = (rand() & 1) && haveHog; }
 #ifdef AUTOTEST
-        if (!mech && (int)(scroll / 2) == 100) mech = 2;   /* test build: start on the Mech */
+        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveHog; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; sfx_play(sCoin, 0); } }
@@ -375,10 +378,10 @@ int main(int argc, char **argv) {
             quad(&emit, 0, ly - 42, 64, 85, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, W - 64, ly - 42, 64, 85, 64.f / 64, 0, 0, 85.f / 88);
         }
-        if (mpick > -900 && haveMech) mechQuad(&mechS, mpick, H - 30, 80, 6);
-        if (mech == 2 && haveMech) {
-            int g = y >= H - 121, f = g ? mechDrive[(frame / 2) % 14] : (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
-            mechQuad(&mechS, 20, y + 100, 150, f);
+        if (mpick > -900 && haveMech) mechQuad(&mechS[vt], vt, mpick, H - 30, 80, vt ? 1 : 6);
+        if (mech == 2 && haveMech && !(vt && !haveHog)) {
+            int g = y >= H - 121, f = vt ? (g ? 1 + (frame / 4) % 4 : 5 + (frame / 4) % 4) : g ? mechDrive[(frame / 2) % 14] : (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
+            mechQuad(&mechS[vt], vt, 20, y + 100, vt ? 130 : 150, f);
             if (haveRig) quad(&bHead, 62, y - 6, 60, 60, 0, 0, 0.25f, 0.125f);
         } else if (inv && (frame / 3) & 1) { } else
         if (haveRig) {   /* the game's own default costume: row 0 run, 1 thrust, 2 fall */

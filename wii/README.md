@@ -92,3 +92,6 @@ Of the 56 level files with backgrounds, 34 have every background tile resolved t
 boost .45 for 20 frames, scaled ~1.5x for 640x480). A pickup crate appears every ~15 s after 150 m; riding it gives
 one free hit. The head overlay and pickup art are placeholders; the real behaviour is native code. The AUTOTEST build
 starts on the Mech at 100 m so it can be checked in Dolphin (verified: ride, hop, hit -> back to Barry).
+
+The Hog (`Vehicles/Jetlane/Hog.xml`: 4x7 grid of 64 px frames, gravity .3, boost 6.5/.6) rides the same way as the Mech;
+the crate picks one of the two at random. Its fire/mount animations are not used yet.
