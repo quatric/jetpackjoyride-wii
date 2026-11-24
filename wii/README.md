@@ -65,3 +65,5 @@ save data, flag-6 `.tex` format, the unnamed atlas sprites, memory budget (88 MB
 coin logic are native C++ in `libmortargame.so`. A full port therefore means re-implementing that C++ from its
 decompilation (Ghidra address minus 0x100000 = file offset), with Lua only worth embedding once the native base classes exist.
 Lua 5.3 sources are available locally (e.g. `MAME4Wii/mame/3rdparty/genie/src/host/lua-5.3.0`) if needed.
+
+`make AUTOTEST=1` in `wii/app` builds a self-playing version (fake A presses) so the loop can be checked in headless Dolphin.

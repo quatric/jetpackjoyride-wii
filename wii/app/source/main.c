@@ -33,6 +33,22 @@ static int loadSpr(Spr *s, const char *name) {
     return 1;
 }
 
+static int tick;   /* frame counter for the AUTOTEST build, which fakes input so Dolphin can run headless */
+static u32 btnDown(void) {
+#ifdef AUTOTEST
+    return (tick % 600 == 90) ? WPAD_BUTTON_A : 0;   /* start / restart */
+#else
+    return INPUT_ButtonsDown();
+#endif
+}
+static u32 btnHeld(void) {
+#ifdef AUTOTEST
+    return ((tick / 25) & 1) ? WPAD_BUTTON_A : 0;
+#else
+    return INPUT_ButtonsHeld();
+#endif
+}
+
 static void fallbackSpr(Spr *s) {   /* magenta 4x4 so a missing asset is visible */
     u8 *d = memalign(32, 64); for (int i = 0; i < 32; i += 2) { d[i] = 255; d[i + 1] = 255; d[32 + i] = 0; d[33 + i] = 255; }
     DCFlushRange(d, 64); s->data = d; s->w = s->h = 4; GX_InitTexObj(&s->obj, d, 4, 4, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -215,15 +231,15 @@ int main(int argc, char **argv) {
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
     for (;;) {
-        INPUT_Update();
+        INPUT_Update(); tick++;
         int dist = 0;
-        if (INPUT_ButtonsDown() & WPAD_BUTTON_HOME) break;
+        if (btnDown() & WPAD_BUTTON_HOME) break;
         if (state != 1) {
-            if (INPUT_ButtonsDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; state = 1; }
+            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; state = 1; }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
-        vy += (INPUT_ButtonsHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2) ? -0.9f : 0.6f);
+        vy += (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2) ? -0.9f : 0.6f);
         if (vy > 9) vy = 9;
         if (vy < -9) vy = -9;
         y += vy;
@@ -265,7 +281,7 @@ int main(int argc, char **argv) {
         if (mst == 1 && prevMst == 0) sfx_play(sMissW, 0);
         if (mst == 2 && prevMst == 1) sfx_play(sMissL, 0);
         prevCur = cur; prevMst = mst;
-        { int thrust = !dead && (INPUT_ButtonsHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2));
+        { int thrust = !dead && (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2));
           if (thrust && !sfx_playing(jetV)) jetV = sfx_play(sJet, 1); else if (!thrust && jetV > 0) { sfx_stop(jetV); jetV = -1; } }
         render:
         GX_InvVtxCache(); GX_InvalidateTexAll();

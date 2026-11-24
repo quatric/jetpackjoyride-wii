@@ -12,6 +12,11 @@ CFLAGS := -O2 -Wall -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -I$(OGC)/include
 LDFLAGS := -mrvl -mcpu=750 -meabi -mhard-float -L$(OGC)/lib/wii -L$(LIBINPUT)/lib -L$(LIBUPDATE)/lib -L$(PORTLIBS)/lib
 LIBS := -lwiiupdate -linput-wii -lwiikeyboard -lwiiuse -lbte -lfat -lvorbisidec -logg -lasnd -logc -lm
 
+# make AUTOTEST=1 builds a self-playing test version
+ifdef AUTOTEST
+CFLAGS += -DAUTOTEST
+endif
+
 all: jetpackjoyride_wii.dol
 jetpackjoyride_wii.elf: $(wildcard source/*.c)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LIBS) -o $@
