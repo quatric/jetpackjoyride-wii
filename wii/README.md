@@ -256,3 +256,7 @@ alignments, dock Fill/None, colour 2,2,2,45): each component is `HCIU 0 <id> 0xc
 string, 3 vector3, 4 vector2, 5 float, 6 rotation, 7 int, 8 colour (4 floats), 10 text; strings are `u32 len + bytes`. Trigger and event
 sections between components (`HTVE`, `CEIU`, `FEIU`, SetProperty actions) are skipped, not decoded, and nesting is only available as the
 `hasParent`/`sibling` fields, not yet turned into a tree. All 471 screens decode to the end (about 253k properties; 797 of them are kept as raw word lists). Entry ends are found by byte search for the next `TAB 2 2`, since strings are not 4-aligned. Texture properties (`texture`, e.g. `textures\Hud\...tex`), position, size, colour and text decode now; button actions live in triggers that are not decoded, `hasParent` is an index into the component list, so `uidecode.children()` gives the tree. In Pause.uiscreen the Window and most content start hidden (`visible` false) and are switched on by triggers (PopUpOpen etc.), so a menu cannot be drawn without decoding those; no menu is drawn from this yet.
+
+### Hoverboard
+
+Sixth rideable vehicle (`hover.spr` from `HoverBoard/hoverboard.png`: a 4x3 grid of 34x47 frames with the rider baked in, row 0 riding, rows 1-2 airborne). Its physics reuse the Hog's numbers and its crate weight is 20; both are guesses, since the real behaviour is native code. Checked in Dolphin with the fake-input build.
