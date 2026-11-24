@@ -417,7 +417,11 @@ int main(int argc, char **argv) {
             ZPat *z = &zp[zi]; int period = z->on + z->off; int lethal = period <= 1 || (ztick % period) < z->on;
             float ang = z->startAngle + (z->rotT ? (z->cw ? 1 : -1) * 360.f * ztick / z->rotT : 0);
             float hx = cosf(ang * 0.0174533f) * zlen / 2, hy = sinf(ang * 0.0174533f) * zlen / 2;
-            if (lethal) quadRot(&bolt, zx, zy, zlen, 24, ang);
+            if (lethal) {   /* zapEffects.tex: a glow band and six arc bands (y ranges in the 512x236 sheet); the arcs flicker over the glow */
+                static const short zb[7][2] = {{4, 55}, {64, 87}, {90, 113}, {124, 143}, {153, 171}, {183, 200}, {213, 230}};
+                quadRotUV(&bolt, zx, zy, zlen, 30, ang, 0, zb[0][0] / 236.f, 1, zb[0][1] / 236.f);
+                for (int q = 0; q < 2; q++) { int b = 1 + ((frame / 3) + q * 3) % 6; quadRotUV(&bolt, zx, zy, zlen, (zb[b][1] - zb[b][0]) * 1.3f, ang, 0, zb[b][0] / 236.f, 1, zb[b][1] / 236.f); }
+            }
             quad(&emit, zx - hx - 16, zy - hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, zx + hx - 16, zy + hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
         }

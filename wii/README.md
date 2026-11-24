@@ -187,3 +187,7 @@ The AUTOTEST build cycles through all five vehicles by level.
 `save.txt` in the app folder holds the best distance and lifetime coins (`"%d %d"`), written at the end of each run and read at
 start; the title shows them. Checked in Dolphin: the file is created on the SD image with the run's values (read back from the
 image). The title text itself was not caught in a screenshot. No shop or upgrades use the coins yet.
+
+Zapper beam art is now real: `Entities/zapEffects.tex` (512x236) holds a glow band (y 4-55) and six arc bands; `bolt.spr` is that
+whole sheet (`mkspr.py zapEffects.png bolt.spr`) and the app draws the glow plus two flickering arcs along the zapper line.
+Checked in Dolphin (yellow lightning beams at several angles). The zapper end nodes (`emit.spr`) are still the laser emitters.
