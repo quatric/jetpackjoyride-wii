@@ -264,7 +264,7 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
     { FILE *t = fopen("sd:/apps/jetpackjoyride/pattern.txt", "r"); if (t) fclose(t); else dir = "fat:/apps/jetpackjoyride/"; } INPUT_Init(); INPUT_SetScreenSize(W, H);
-    WIIUPDATE_SetAppPath(argc > 0 ? argv[0] : NULL); WIIUPDATE_Start("quatric", "jetpackjoyride_nx", "0.1.0");
+    WIIUPDATE_SetAppPath(argc > 0 ? argv[0] : NULL); WIIUPDATE_Start("quatric", "jetpackjoyride-wii", "0.1.0");
     Spr barry = {0}, coin = {0};
     if (!loadSpr(&barry, "barry.spr")) fallbackSpr(&barry);
     if (!loadSpr(&coin, "coin.spr")) fallbackSpr(&coin);
