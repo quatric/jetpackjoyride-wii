@@ -104,3 +104,9 @@ head offsets are still a guess.
 Vehicle sounds (stand-ins picked by name, not by the game's own event table): `mech_turkey_form_complete` /
 `santa_hog_form_complete` on mounting, `mech_yeti_jump` / `dullahan_bike_jump` on a hop. Copy them to the app folder as
 `mmount.ogg`, `hmount.ogg`, `mjump.ogg`, `hjump.ogg`. Played in Dolphin without a crash, but not listened to.
+
+Profit Bird (`Events/ChineseNewYear/xml/Vehicles/ProfitBird.xml`: 6x3 grid of 39x54 frames, gravity .2, flap impulse 5,
+JUMP_COUNT 10) is the third vehicle: every press flaps, up to 10 times before landing. Vehicles now carry their own
+boost-frame count (Mech 20, Hog 12, Bird 1) and jump count. `mkspr.py` makes `bird.spr` from `vehicleBird.png`;
+`mkvhead.py` takes a third file and reuses the nearest lower frame where the data is sparse. Sounds for the Bird
+reuse the Hog's.

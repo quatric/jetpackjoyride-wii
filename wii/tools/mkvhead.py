@@ -7,5 +7,7 @@ for i, f in enumerate(sys.argv[2:]):
     t = open(f).read().split('<skin')[0]
     fr = {int(m[0]): (int(m[1]), int(m[2]), int(m[3])) for m in re.findall(r'<frame value="(\d+)" offset="(-?\d+),(-?\d+)"[^>]*headFrame="(\d+)"', t)}
     n = max(fr) + 1
+    for k in range(2, n):   # sparse files (bird) only list some frames: reuse the nearest lower one
+        fr.setdefault(k, fr.get(k - 1, (0, 0, 5)))
     out.append('static const signed char VHEAD%d[%d][3] = {%s};' % (i, n, ','.join('{%d,%d,%d}' % fr.get(k, (0, 0, 5)) for k in range(n))))
 open(sys.argv[1], 'w').write('\n'.join(out) + '\n')
