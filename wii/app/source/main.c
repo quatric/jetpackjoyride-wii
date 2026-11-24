@@ -222,6 +222,7 @@ int main(int argc, char **argv) {
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
     loadMissile(); loadZappers(); loadFont();
+    Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
     int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet};
         for (int i = 0; i < 6; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } }
     int jetV = -1, prevCur = -1, prevMst = 0;
@@ -308,6 +309,13 @@ int main(int argc, char **argv) {
             quad(&emit, 0, ly - 42, 64, 85, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, W - 64, ly - 42, 64, 85, 64.f / 64, 0, 0, 85.f / 88);
         }
+        if (haveRig) {   /* the game's own default costume: row 0 run, 1 thrust, 2 fall */
+            int onGround = y >= H - 121, thrust = btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2);
+            int row = onGround ? 0 : thrust ? 1 : 2, col = (frame / 6) & 3;
+            float u0 = col / 4.f, u1 = (col + 1) / 4.f, v0 = row / 8.f, v1 = (row + 1) / 8.f;
+            quad(&bBody, 60, y + 14, 96, 96, u0, v0, u1, v1);
+            quad(&bHead, 66, y - 8, 80, 80, u0, v0, u1, v1);   /* head offset is a guess: the real anchors live in native code */
+        } else
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
                 if (state != 1) {
             char t[48];
