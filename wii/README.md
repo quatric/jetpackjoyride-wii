@@ -222,3 +222,10 @@ tables, the 34 levels with foreground, the title logo and the 26 sound files) fr
 commands listed earlier in this file (those are out of date). Checked by building into a fresh folder and comparing it
 byte for byte with the folder used for the Dolphin runs: identical apart from `boot.dol`. Steps before it: `tex2png.py <assets>
 <png>` and `atlas_extract.py <assets> <sprites> [libmortargame.so]`.
+
+## CI
+
+`.github/workflows/wii.yml` builds the app in the `devkitpro/devkitppc` container on every push that touches `wii/` (installs
+libvorbisidec/libogg, clones and builds quatric/libwiiinput and libwiiupdate, runs `make -C wii/app`, then `wii/package.sh`) and
+uploads the asset-free Homebrew Channel zip as an artifact. The first run passed. It does not create a GitHub release, so
+libwiiupdate has nothing to install yet; attaching the zip to a tagged release is left for when a build has been tried on a console.
