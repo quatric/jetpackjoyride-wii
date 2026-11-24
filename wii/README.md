@@ -51,3 +51,11 @@ Tested in Dolphin (needs an MBR-partitioned FAT32 `sd.raw` and `[General] WiiSDC
 Barry's animation (Spine/`.atlas` text + xml components), UI screens (`.uiscreen`), levels (`xml/Levels`, `LevelPacing.xml`),
 obstacles/vehicles/bosses (100 Lua scripts in `scripts/`: needs an embedded Lua), sound effects (music streams already via Tremor + ASND on a thread; `sound/*.ogg` has 1944 effects),
 save data, flag-6 `.tex` format, the unnamed atlas sprites, memory budget (88 MB RAM, ~800 MB of assets).
+
+### Lua scripts are skins, not the game
+
+`scripts/*.lua` (100 files, e.g. `Chicken.lua`) only drive sounds, animations, particles and HUD for a vehicle and call
+`self.Base.OnUpdate`/`RegisterVehicle(name, baseClass, table)`; the physics, obstacles, missiles, zappers, bosses and
+coin logic are native C++ in `libmortargame.so`. A full port therefore means re-implementing that C++ from its
+decompilation (Ghidra address minus 0x100000 = file offset), with Lua only worth embedding once the native base classes exist.
+Lua 5.3 sources are available locally (e.g. `MAME4Wii/mame/3rdparty/genie/src/host/lua-5.3.0`) if needed.
