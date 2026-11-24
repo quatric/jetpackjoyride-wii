@@ -292,3 +292,5 @@ Thirteenth vehicle, so all 13 in `vehicleProbability.xml` can now be ridden. It 
 ### .uiscreen events
 
 `uidecode.events()` now fills `component["events"]` with `(event, [(command, [string args])])` read from the `HTVE`/`CEIU` sections (numeric operands are still skipped). Across all screens `OnButtonPressed` is the commonest event (881) and `InvokeTrigger` the commonest command (1176), e.g. the pause buttons invoke `Triggers.Buttons.Resume`, `.Retry` and `.Quit`. Known gap: child lookup via `hasParent` does not reach everything under `PauseContent` (only its title text shows), so a menu cannot be laid out from it yet.
+
+More on the gap: the parent links are right for some subtrees (PopUpPause and its Sale button come out correctly) but not others. In Pause.uiscreen the Quit and Retry triggers resolve to a parent called `buttonsFlow`, and a Trigger-class component often has a plain `Component` parent, so `hasParent` is probably not a plain index into the component list everywhere. The id table has only 251 names for 643 components, so ids are shared. Not resolved.
