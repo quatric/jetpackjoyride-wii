@@ -171,3 +171,8 @@ Also from the table now: jetpack loop/start/stop = `TRADITIONAL_JETPACK` (jetpac
 Lasers and missiles use `LASER_PACKAGE` (laser_warning, laser_start when the beam goes live) and `MISSILE_PACKAGE`
 (missile_warning, missile_launch, rocket_explode_1 on impact; the missile now disappears when it hits). Run in Dolphin without
 a crash, not listened to.
+
+Gravity Suit (`Vehicles/GravitySuit/VehicleGravitySuit.xml`: 6x4 grid of 42 px frames; animations drive 1-6, fall_down 7-8,
+fall_up 13-14) is the fourth vehicle: a press flips gravity between floor and ceiling and the suit is drawn upside down on the
+ceiling; sound `grav_change_1`. The APK has no physics or head-placement file for it, so the gravity strength (0.9/frame) is my
+own, the head is not drawn separately, and the flip/land animations are unused. Seen in Dolphin on the ceiling and flipping.

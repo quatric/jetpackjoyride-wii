@@ -276,13 +276,16 @@ static float segDist(float px, float py, float ax, float ay, float bx, float by)
 /* Mech (vehicles/Jetlane/Mech.xml): gravity .36, initial boost 6, boost .45 for 20 frames; absorbs one hit */
 static const int mechDrive[14] = {6,6,1,1,2,2,2,3,3,4,4,5,5,5};
 /* per vehicle: sheet columns, frame px, padded sheet px, gravity, initial boost, boost (Hog.xml / Mech.xml) */
-static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; const char *spr; } VEH[3] = {
+static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; const char *spr; } VEH[4] = {
     {6, 85, 85, 512, 256, 0.36f, 6.0f, 0.45f, 20, 1, "mech.spr"}, {4, 64, 64, 256, 448, 0.30f, 6.5f, 0.60f, 12, 1, "hog.spr"},
-    {6, 39, 54, 236, 164, 0.20f, 5.0f, 0.00f, 1, 10, "bird.spr"} };   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
-static const int vpick[3] = {6, 1, 13};
+    {6, 39, 54, 236, 164, 0.20f, 5.0f, 0.00f, 1, 10, "bird.spr"},
+    {6, 42, 42, 252, 168, 0.60f, 0.0f, 0.0f, 0, 0, "gsuit.spr"} };   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
+static const int vpick[4] = {6, 1, 13, 1};
+static int mflip;   /* draw the next vehicle quad upside down (Gravity Suit on the ceiling) */
 static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h = drawn height; width keeps the frame's aspect */
     int c = (f - 1) % VEH[vt].cols, r = (f - 1) / VEH[vt].cols, fw = VEH[vt].fw, fh = VEH[vt].fh;
-    quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, r * (float)fh / VEH[vt].ph, (c + 1) * (float)fw / VEH[vt].pw, (r + 1) * (float)fh / VEH[vt].ph);
+    float va = r * (float)fh / VEH[vt].ph, vb = (r + 1) * (float)fh / VEH[vt].ph;
+    quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
 #define HIT() do { if (mech == 2) { mech = 0; inv = 90; sfx_play(sVDie, 0); } else if (!inv) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
@@ -303,15 +306,15 @@ int main(int argc, char **argv) {
     int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
-    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[3], sVj[3], sZap, sVDie, sJS, sJE, sC2, sC3, sMS, sLS, sME; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg", "bmount.ogg", "bflap.ogg", "jstart.ogg", "jstop.ogg", "coin2.ogg", "coin3.ogg", "mstep.ogg", "lstart.ogg", "mexp.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie, &sVm[2], &sVj[2], &sJS, &sJE, &sC2, &sC3, &sMS, &sLS, &sME};
-        for (int i = 0; i < 21; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } }
+    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[4], sVj[4], sGC, sZap, sVDie, sJS, sJE, sC2, sC3, sMS, sLS, sME; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg", "bmount.ogg", "bflap.ogg", "jstart.ogg", "jstop.ogg", "coin2.ogg", "coin3.ogg", "mstep.ogg", "lstart.ogg", "mexp.ogg", "gchg.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie, &sVm[2], &sVj[2], &sJS, &sJE, &sC2, &sC3, &sMS, &sLS, &sME, &sGC};
+        for (int i = 0; i < 22; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[3] = sVm[0]; sVj[3] = sGC; }
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
-    Spr mechS[3] = {{0}, {0}, {0}}; int haveV[3], nV = 0, vt = 0, jl = 0; for (int i = 0; i < 3; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
+    Spr mechS[4] = {{0}, {0}, {0}, {0}}; int haveV[4], nV = 0, vt = 0, jl = 0, gd = 1; for (int i = 0; i < 4; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
     for (;;) {
@@ -326,7 +329,10 @@ int main(int argc, char **argv) {
             goto render;
         }
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
-          if (mech == 2) {
+          if (mech == 2 && vt == 3) {   /* Gravity Suit: a press flips gravity between floor and ceiling */
+              if (held && !wasHeld) { gd = -gd; sfx_play(sGC, 0); }
+              vy += gd * 0.9f; if (vy > 12) vy = 12; if (vy < -12) vy = -12;
+          } else if (mech == 2) {
               if (y >= H - 121) jl = VEH[vt].jumps;
               if (held && !wasHeld && jl > 0) { jl--; vy = -1.5f * VEH[vt].ib; bf = VEH[vt].bfc; sfx_play(sVj[vt], 0); }
               vy += 1.5f * VEH[vt].g; if (held && bf > 0) { vy -= 1.5f * VEH[vt].b; bf--; } if (!held) bf = 0;
@@ -338,12 +344,12 @@ int main(int argc, char **argv) {
           }
           wasHeld = held; }
         y += vy; if (inv) inv--;
-        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; int ok[3]; for (int i = 0; i < 3; i++) if (haveV[i]) ok[nV++] = i; if (nV) vt = ok[rand() % nV]; else mpick = -999; }
+        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; int ok[4]; for (int i = 0; i < 4; i++) if (haveV[i]) ok[nV++] = i; if (nV) vt = ok[rand() % nV]; else mpick = -999; }
 #ifdef AUTOTEST
-        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 3] ? lvl % 3 : 0; }   /* test build: start on the Mech */
+        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 4] ? lvl % 4 : 0; gd = 1; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
-            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; sfx_play(sVm[vt], 0); } }
+            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; } }
@@ -415,11 +421,13 @@ int main(int argc, char **argv) {
         if (mech == 2 && haveV[vt]) {
             int g = y >= H - 121, held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0, f;
             static const int birdFlap[8] = {15, 17, 1, 3, 5, 7, 9, 11};
-            if (vt == 2) f = g ? 13 : birdFlap[(frame / 2) % 8];
+            int gs = vt == 3, ceil = gs && y <= 61; mflip = gs && gd < 0;
+            if (gs) f = (g || ceil) ? 1 + (frame / 4) % 6 : gd > 0 ? 7 + (frame / 5) % 2 : 13 + (frame / 5) % 2;
+            else if (vt == 2) f = g ? 13 : birdFlap[(frame / 2) % 8];
             else if (vt) f = g ? 1 + (frame / 4) % 4 : 5 + (frame / 4) % 4;
             else f = g ? mechDrive[(frame / 2) % 14] : held && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
-            float sz = vt == 1 ? 130 : vt == 2 ? 110 : 150, k = sz / VEH[vt].fh, w = sz * VEH[vt].fw / VEH[vt].fh; mechQuad(&mechS[vt], vt, 20, y + 100, sz, f);
-            if (haveRig) {   /* head placement from Vehicle*Data.xml (offset from frame centre; rotation ignored) */
+            float sz = vt == 1 ? 130 : vt == 2 ? 110 : vt == 3 ? 100 : 150, k = sz / VEH[vt].fh, w = sz * VEH[vt].fw / VEH[vt].fh; mechQuad(&mechS[vt], vt, 20, y + 100, sz, f); mflip = 0;
+            if (haveRig && !gs) {   /* head placement from Vehicle*Data.xml (offset from frame centre; rotation ignored) */
                 const short *h = vt == 2 ? VHEAD2[f] : vt ? VHEAD1[f] : VHEAD0[f]; int c = (h[2] - 1) % 4, r = (h[2] - 1) / 4; float hs = 32 * k;
                 quadRotUV(&bHead, 20 + w / 2 + h[0] * k, y + 100 - sz / 2 + h[1] * k, hs, hs, (float)h[3], c / 4.f, r / 8.f, (c + 1) / 4.f, (r + 1) / 8.f);
             }
