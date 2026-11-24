@@ -38,6 +38,7 @@ static int loadSpr(Spr *s, const char *name) {
 static int tick;   /* frame counter for the AUTOTEST build, which fakes input so Dolphin can run headless */
 static u32 btnDown(void) {
 #ifdef AUTOTEST
+    if (tick == 60) return WPAD_BUTTON_DOWN; if (tick == 90 || tick == 120) return WPAD_BUTTON_A; if (tick == 150) return WPAD_BUTTON_B; if (tick == 180) return WPAD_BUTTON_UP;   /* shop: select, open, buy, close, back to START */
     return (tick == 420 || (tick > 420 && tick % 600 == 90)) ? WPAD_BUTTON_A : (tick % 600 == 300 || tick % 600 == 480) ? WPAD_BUTTON_PLUS : 0;   /* start / restart / pause / resume */
 #else
     return INPUT_ButtonsDown();
@@ -338,6 +339,9 @@ int main(int argc, char **argv) {
     Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0; Spr magS = {0}; int haveMag = loadSpr(&magS, "magnet.spr"); Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
+#ifdef AUTOTEST
+    total = 600; gMagnet = 0;
+#endif
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
@@ -390,7 +394,7 @@ int main(int argc, char **argv) {
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d\n", lvl, vt, lastDist, tick); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
