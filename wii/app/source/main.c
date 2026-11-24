@@ -247,6 +247,14 @@ static float segDist(float px, float py, float ax, float ay, float bx, float by)
     t = t < 0 ? 0 : t > 1 ? 1 : t; float qx = ax + t * dx - px, qy = ay + t * dy - py; return sqrtf(qx * qx + qy * qy);
 }
 
+/* Mech (vehicles/Jetlane/Mech.xml): gravity .36, initial boost 6, boost .45 for 20 frames; absorbs one hit */
+static const int mechDrive[14] = {6,6,1,1,2,2,2,3,3,4,4,5,5,5};
+static void mechQuad(Spr *s, float x, float yb, float sz, int f) {
+    int c = (f - 1) % 6, r = (f - 1) / 6;
+    quad(s, x, yb - sz, sz, sz, c * 85.f / 512, r * 85.f / 256, (c + 1) * 85.f / 512, (r + 1) * 85.f / 256);
+}
+#define HIT() do { if (mech == 2) { mech = 0; inv = 90; sfx_play(sHurt, 0); } else if (!inv) { dead = 60; sfx_play(sHurt, 0); } } while (0)
+
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
     { FILE *t = fopen("sd:/apps/jetpackjoyride/pattern.txt", "r"); if (t) fclose(t); else dir = "fat:/apps/jetpackjoyride/"; } INPUT_Init(); INPUT_SetScreenSize(W, H);
@@ -272,20 +280,36 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
+    Spr mechS = {0}; int haveMech = loadSpr(&mechS, "mech.spr");
+    int mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
         if (btnDown() & WPAD_BUTTON_HOME) break;
         if (state != 1) {
-            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
+            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
-        vy += (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2) ? -0.9f : 0.6f);
-        if (vy > 9) vy = 9;
-        if (vy < -9) vy = -9;
-        y += vy;
+        { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
+          if (mech == 2) {
+              if (held && !wasHeld && y >= H - 121) { vy = -9; bf = 20; }
+              vy += 0.54f; if (held && bf > 0) { vy -= 0.68f; bf--; } if (!held) bf = 0;
+              if (vy > 12) vy = 12;
+          } else {
+              vy += (held ? -0.9f : 0.6f);
+              if (vy > 9) vy = 9;
+              if (vy < -9) vy = -9;
+          }
+          wasHeld = held; }
+        y += vy; if (inv) inv--;
+        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) mpick = W;
+#ifdef AUTOTEST
+        if (!mech && (int)(scroll / 2) == 100) mech = 2;   /* test build: start on the Mech */
+#endif
+        if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
+            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; sfx_play(sCoin, 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; } }
@@ -297,7 +321,7 @@ int main(int argc, char **argv) {
             else if (++ptick > pats[cur].time + 60) cur = -1;
             if (cur >= 0 && ptick > 60) for (int i = 0; i < pats[cur].n; i++) {
                 float ly = 240 - pats[cur].y[i] * 1.6f;
-                if (fabsf(ly - (y + 45)) < 22) { dead = 60; sfx_play(sHurt, 0); break; }
+                if (fabsf(ly - (y + 45)) < 22) { HIT(); break; }
             }
         }
         if (!dead && cur < 0) {   /* missiles share the screen with lasers only when no laser pattern is active */
@@ -306,7 +330,7 @@ int main(int argc, char **argv) {
         }
         if (mst == 2 && !dead) {
             mx -= mSpeed;
-            if (mx < 150 && mx + 64 > 60 && fabsf(my - (y + 45)) < 28) { dead = 60; sfx_play(sHurt, 0); }
+            if (mx < 150 && mx + 64 > 60 && fabsf(my - (y + 45)) < 28) { HIT(); }
             if (mx < -64) { mst = 0; }
         }
         if (!dead) {
@@ -316,7 +340,7 @@ int main(int argc, char **argv) {
                 ZPat *z = &zp[zi]; int period = z->on + z->off; int lethal = period <= 1 || (ztick % period) < z->on;
                 float ang = z->startAngle + (z->rotT ? (z->cw ? 1 : -1) * 360.f * ztick / z->rotT : 0);
                 float hx = cosf(ang * 0.0174533f) * zlen / 2, hy = sinf(ang * 0.0174533f) * zlen / 2;
-                if (lethal && segDist(105, y + 45, zx - hx, zy - hy, zx + hx, zy + hy) < 20) { dead = 60; sfx_play(sHurt, 0); }
+                if (lethal && segDist(105, y + 45, zx - hx, zy - hy, zx + hx, zy + hy) < 20) { HIT(); }
                 if (zx < -200) zi = -1;
             }
         }
@@ -351,6 +375,12 @@ int main(int argc, char **argv) {
             quad(&emit, 0, ly - 42, 64, 85, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, W - 64, ly - 42, 64, 85, 64.f / 64, 0, 0, 85.f / 88);
         }
+        if (mpick > -900 && haveMech) mechQuad(&mechS, mpick, H - 30, 80, 6);
+        if (mech == 2 && haveMech) {
+            int g = y >= H - 121, f = g ? mechDrive[(frame / 2) % 14] : (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
+            mechQuad(&mechS, 20, y + 100, 150, f);
+            if (haveRig) quad(&bHead, 62, y - 6, 60, 60, 0, 0, 0.25f, 0.125f);
+        } else if (inv && (frame / 3) & 1) { } else
         if (haveRig) {   /* the game's own default costume: row 0 run, 1 thrust, 2 fall */
             int onGround = y >= H - 121, thrust = btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2);
             int row = onGround ? 0 : thrust ? 1 : 2, col = (frame / 6) & 3;

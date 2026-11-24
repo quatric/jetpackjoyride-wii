@@ -84,3 +84,11 @@ The warehouse background tiles use it (32 KB instead of 256 KB each); verified v
 hard-edged art; soft-alpha sprites (glows, flame) should stay RGBA8 or move to RGB5A3.
 
 Of the 56 level files with backgrounds, 34 have every background tile resolved to a named sprite (the other 22, such as the aquarium, St Patrick's, pirate and Metal Slug variants, name tiles that are in no atlas and not on disk: that art is not in this APK, most likely downloaded as event/OTA content, so 34 is the ceiling for the base install).
+
+## Vehicles (first prototype: Mech)
+
+`vehicleMech.tex` is a 6x3 grid of 85 px frames (1-based, from `VehicleMech.xml`); `mech.spr` is made with
+`tools/mkspr.py vehicleMech.png mech.spr`. Physics follow `Vehicles/Jetlane/Mech.xml` (gravity .36, initial boost 6,
+boost .45 for 20 frames, scaled ~1.5x for 640x480). A pickup crate appears every ~15 s after 150 m; riding it gives
+one free hit. The head overlay and pickup art are placeholders; the real behaviour is native code. The AUTOTEST build
+starts on the Mech at 100 m so it can be checked in Dolphin (verified: ride, hop, hit -> back to Barry).
