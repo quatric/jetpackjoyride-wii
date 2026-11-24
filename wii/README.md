@@ -268,3 +268,7 @@ Seventh vehicle (`skate.spr` from `IceSkates/iceskates.png`, a 4x4 grid of 38x50
 ### Ecto
 
 Eighth vehicle (`ecto.spr` from `Ecto/Ecto/ecto.png`): the sheet is one static 256x128 frame with no rider, so no animation and no head. Physics are the Hog's, a guess. Checked in Dolphin.
+
+### DeLorean
+
+Ninth vehicle (`dlr.spr` from `delorean/delorean.png`): one static 157x62 frame, no rider; the glow and tube layers are not drawn. Hog physics, a guess. Checked in Dolphin.
