@@ -336,3 +336,7 @@ Every 2500 m from 1500 m the game sends in a Colossatron: the real head and body
 Fifth item, with the real icon: when you die on foot the tumble bounces further (`settings.xml` has `DEATH_BOUNCE_DAMPENING_RUBBER` 1.6 against 0.99 normally; I scale that onto my 0.5 bounce factor to get 0.8). Cosmetic only. 350 coins (price mine); `save.txt` bit 16. The fake-input build buys all five from 2500 coins (284 left after the first run, save ends with `31`); the bounce itself was not compared in a test.
 
 The boom is drawn and flies (seen in Dolphin; the test log counted 2, 3 and 4 launched and passed across three runs), but no run was hit by one, so its hit path is unchecked.
+
+### Game-over summary
+
+The game-over screen now also shows the run's coins and the running total, and a blinking NEW BEST when the distance beat the saved best. Plain text on the existing screen; the real results screen (leaderboards, rewards, social panels) is not ported. Seen in Dolphin.

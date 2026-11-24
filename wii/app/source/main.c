@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
-    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, boomDone = 0, boomHit = 0;
+    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, boomDone = 0, boomHit = 0, newBest = 0;
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[5] = {{0}, {0}, {0}, {0}, {0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
@@ -404,7 +404,7 @@ int main(int argc, char **argv) {
         if (dead && mech != 2) {   /* death tumble: settings.xml DEATH_GRAVITY 0.24 (x1.5 screen scale), MIN_BOUNCE_VELOCITY 4, DEATH_BOUNCE_DAMPENING 0.99 (damped further here: the unit of that one is a guess) */
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total);
+        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
             { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d boss %d bhit %d boom %d/%d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, bossDone, bossHit, boomDone, boomHit, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
@@ -536,7 +536,7 @@ int main(int argc, char **argv) {
                 quad(&logoT, 24, 40, 360, 218, 0, 0, 360.f / 360, 218.f / 220);
                 quad(&logoB, 400, 80, 192, 270, 0, 0, 192.f / 192, 270.f / 272);
             } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
-            if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
+            if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); snprintf(t, sizeof t, "COINS %d   TOTAL %d", score, total); drawText(W / 2 - 230, 225, 0.7f, t); if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 265, 0.9f, "NEW BEST"); }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
                 float cx = W / 2, cy = 320, bw = 332 * 0.75f, bh = 96 * 0.75f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.75f - 24, cy - 48, 48, 96, 0, 0, 1, 1);
                 drawText(cx + 38 * 0.75f - 55, cy - 16, 0.9f, "START");
