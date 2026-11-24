@@ -24,6 +24,24 @@ for e in extra: names.update(m.decode('latin1').strip() for m in pat.findall(ope
 by_hash = {}
 for p in names:
     for v in {p, p.lstrip('/'), 'textures/' + p.lstrip('/')}: by_hash[file_string_hash(v)] = v
+
+# second stage: sprite names are often stored relative to a folder; try every known folder prefix on every name found
+atlases = [os.path.join(r, f) for r, _, fs in os.walk(root) for f in fs if f.endswith('.atlas')]
+need = set()
+for ap in atlases:
+    try: need.update(struct.unpack('<I', bytes.fromhex(h[:8]))[0] for h, _ in parse(open(ap, 'rb').read())['names'])
+    except Exception: pass
+need -= set(by_hash)
+dirs = {''}
+for v in list(by_hash.values()):
+    parts = v.strip('/').split('/')
+    dirs.update('/'.join(parts[:i]) for i in range(1, len(parts)))
+for n in names:
+    base = n.strip('/')
+    for cand in (base, os.path.basename(base)):
+        for d in dirs:
+            c = d + '/' + cand if d else cand; h = file_string_hash(c)
+            if h in need: by_hash[h] = c
 manifest = {}; miss = 0; total = 0
 for r, _, fs in os.walk(root):
     for f in fs:
