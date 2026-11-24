@@ -264,3 +264,7 @@ Sixth rideable vehicle (`hover.spr` from `HoverBoard/hoverboard.png`: a 4x3 grid
 ### Ice Skates
 
 Seventh vehicle (`skate.spr` from `IceSkates/iceskates.png`, a 4x4 grid of 38x50 frames, rider baked in; row 0 skating, row 1 airborne). Physics are the Hog's, a guess. Checked in Dolphin.
+
+### Ecto
+
+Eighth vehicle (`ecto.spr` from `Ecto/Ecto/ecto.png`): the sheet is one static 256x128 frame with no rider, so no animation and no head. Physics are the Hog's, a guess. Checked in Dolphin.
