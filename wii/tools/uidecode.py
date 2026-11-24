@@ -74,3 +74,11 @@ if __name__ == '__main__':
     for f in sys.argv[1:]:
         cs, ok = decode(open(f, 'rb').read()); print(f, 'complete' if ok else 'INCOMPLETE')
         for c in cs: print(' ', c['id'], c['class'], c['order'], c['props'])
+
+
+def children(comps):
+    """parent index -> child indices; `hasParent` indexes the component list (0xffffffff = root)."""
+    ch = {}
+    for i, c in enumerate(comps):
+        ch.setdefault(c['hasParent'], []).append(i)
+    return ch
