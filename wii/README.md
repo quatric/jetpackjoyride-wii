@@ -284,3 +284,7 @@ Eleventh vehicle (`sled.spr` from `sled/sleigh.png`): a real 4x2 animation sheet
 ### Jetski
 
 Twelfth vehicle (`jski.spr` from `Jetski/jetski.png`): one static 64x32 frame; the handle and the water are not drawn, and the rider is not shown. Hog physics, a guess. Checked in Dolphin.
+
+### Dragon
+
+Thirteenth vehicle, so all 13 in `vehicleProbability.xml` can now be ridden. It is assembled from the real default-dragon sprites (`drh.spr` head, `drb.spr` body, `drf.spr` four wing frames): head in front, three body segments trailing in a sine wave, wings on the middle one. The layout is mine, since the real offsets live in native code; no jaw, horn, nose or fire. Hog physics, a guess. Checked in Dolphin.
