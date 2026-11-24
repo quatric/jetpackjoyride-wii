@@ -47,7 +47,7 @@ SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `be
     python3 -I wii/tools/mkspr.py jj_sprites/missileAlert.png alert.spr 0 0 256 64
     python3 -I wii/tools/mkzappers.py <assets>/xml/ObstaclePatterns.xml zappers.txt
     python3 -I wii/tools/mkspr.py jj_sprites/electricbolt.png bolt.spr
-    for i in 1 2 3 4; do python3 -I wii/tools/mkspr.py jj_sprites/warehouse/warehouseBG1_$i.png bg$((i-1)).spr; done
+    for i in 1 2 3 4; do python3 -I wii/tools/mkspr.py --cmpr jj_sprites/warehouse/warehouseBG1_$i.png bg$((i-1)).spr; done
     python3 -I wii/tools/mkspr.py jj_sprites/textures/effects/jetpack/standardflame.png flame.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultBody.png body.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultHead.png head.spr
@@ -78,3 +78,7 @@ Lua 5.3 sources are available locally (e.g. `MAME4Wii/mame/3rdparty/genie/src/ho
 set fits on an SD card. RAM only has to hold one level's atlases at a time (a few MB in CMPR) with audio streamed, so the
 "800 MB vs 88 MB" worry is a streaming problem, not a blocker. Biggest consumers: levels 136 Mpx, menus 79 Mpx, characters 30 Mpx.
 The slice currently uses RGBA8 (4 bytes/px), which is fine for the handful of sprites it loads but not for a full level set.
+
+`mkspr.py --cmpr` writes GX_TF_CMPR (`SPR1`, 4 bits/px, 1-bit alpha) and the app loads both `SPR0` (RGBA8) and `SPR1`.
+The warehouse background tiles use it (32 KB instead of 256 KB each); verified visually in Dolphin. Use it for opaque or
+hard-edged art; soft-alpha sprites (glows, flame) should stay RGBA8 or move to RGB5A3.

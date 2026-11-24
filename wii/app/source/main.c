@@ -23,12 +23,13 @@ static void *fifo, *xfb[2]; static int fb; static GXRModeObj *rmode;
 static int loadSpr(Spr *s, const char *name) {
     char p[128]; snprintf(p, sizeof p, "%s%s", dir, name);
     FILE *f = fopen(p, "rb"); if (!f) return 0;
-    u8 hd[12]; if (fread(hd, 1, 12, f) != 12 || memcmp(hd, "SPR0", 4)) { fclose(f); return 0; }
+    u8 hd[12]; if (fread(hd, 1, 12, f) != 12 || (memcmp(hd, "SPR0", 4) && memcmp(hd, "SPR1", 4))) { fclose(f); return 0; }
+    int cmpr = hd[3] == '1';   /* SPR1 = GX_TF_CMPR (0.5 byte/px), SPR0 = RGBA8 */
     int pw = hd[4] << 8 | hd[5], ph = hd[6] << 8 | hd[7]; s->w = hd[8] << 8 | hd[9]; s->h = hd[10] << 8 | hd[11];
-    size_t n = (size_t)pw * ph * 4; s->data = memalign(32, n);
+    size_t n = cmpr ? (size_t)pw * ph / 2 : (size_t)pw * ph * 4; s->data = memalign(32, n);
     if (!s->data || fread(s->data, 1, n, f) != n) { fclose(f); return 0; }
     fclose(f); DCFlushRange(s->data, n);
-    GX_InitTexObj(&s->obj, s->data, pw, ph, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GX_InitTexObj(&s->obj, s->data, pw, ph, cmpr ? GX_TF_CMPR : GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GX_InitTexObjFilterMode(&s->obj, GX_NEAR, GX_NEAR);
     return 1;
 }
