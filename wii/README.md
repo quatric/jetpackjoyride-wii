@@ -368,3 +368,5 @@ Sixth item, with the real `gem` icon: every coin counts double. `perks.xml` list
 ### Boss health
 
 The Colossatron now has 3 health: while riding a vehicle, ramming its head costs it one (40 frames between hits) and the third defeats it for 100 coins; body segments, its boom and touching it on foot still hurt you. **This rule is my own.** In the fake-input test build (which cannot aim) the boss was never rammed, so kills stayed at 0 and the defeat path is unchecked; the same runs did log one boom hitting the player, so that hit path now is checked (a test-sequence slip of mine, a clashing key at tick 180, had made the title reopen the shop, fixed).
+
+Follow-up on boss health: my first ramming rule could never kill it (the head crosses the player in about 32 frames, shorter than the 40-frame cooldown, so one pass gave one hit). A ram now also knocks the boss back 130 px so it can be rammed again. The test build now hands the vehicle and steers it into the head whenever the boss is on screen (test only); with the boss at 15 m the log shows `kills 1` and a run to 237 m, so the three-ram defeat and its 100 coins now work. Against a human the rule is untried.

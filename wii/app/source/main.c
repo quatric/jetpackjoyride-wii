@@ -376,7 +376,7 @@ int main(int argc, char **argv) {
             }
             if (doRestart || ((btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); dudLeft = gDud ? 3 : 0; cst = 0;
 #ifdef AUTOTEST
-            nextBoss = 30;
+            nextBoss = 15;
 #else
             nextBoss = 1500;
 #endif
@@ -437,6 +437,9 @@ int main(int argc, char **argv) {
             if (mst == 0 && dist >= mStart && --mwait <= 0) { mwait = 120; if (rand() % 100 < mProb) { mst = 1; mtick = 0; my = y + 45; } }
             else if (mst == 1) { float t = y + 45; my += fminf(fmaxf(t - my, -mChase * 2), mChase * 2); if (++mtick > 90) { mst = 2; mx = W; } }
         }
+#ifdef AUTOTEST
+        if (cst) { if (mech != 2) { mech = 2; vt = 0; } y = 170 + 90 * sinf(frame * 0.05f) + 28 - 45; }   /* test build only: give a vehicle and steer it into the boss head so the ram path runs */
+#endif
         if (haveCol && !dead && state == 1) {   /* Colossatron: a head and 6 body segments sweep in from the right in a sine wave; touching one is a hit; 25 coins for outlasting it */
             if (!cst && dist >= nextBoss && cur < 0 && mst == 0) { cst = 1; cbx = W + 40; bossHp = 3; bossCd = 0; nextBoss = dist + 2500; }
             if (cst) {
@@ -445,7 +448,7 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < 7; i++) {
                     float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f);
                     if (sx < 150 && sx + 56 > 60 && fabsf(sy + 28 - (y + 45)) < 42) {
-                        if (i == 0 && mech == 2) { if (!bossCd) { bossCd = 40; if (--bossHp <= 0) { cst = 0; boomOn = 0; score += 100; bossKills++; sfx_play(sME, 0); break; } sfx_play(sME, 0); } }   /* ramming the head from a vehicle costs it health (my rule) */
+                        if (i == 0 && mech == 2) { if (!bossCd) { bossCd = 40; cbx += 130; if (--bossHp <= 0) { cst = 0; boomOn = 0; score += 100; bossKills++; sfx_play(sME, 0); break; } sfx_play(sME, 0); } }   /* ramming the head from a vehicle costs it health and knocks it back so it can be rammed again (my rule) */
                         else { int d0 = dead, m0 = mech; HIT(); if (dead != d0 || mech != m0) bossHit++; }
                     }
                 }
