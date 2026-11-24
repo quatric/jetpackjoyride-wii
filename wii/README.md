@@ -413,3 +413,5 @@ The game-over text is now drawn over the real `menus/popupBacking` panel from th
 ## Real text
 
 `tools/strtab.py` decodes the APK's `.str` string tables (`translations_header.str` holds the keys, `translations_<Language>.str` the text; the last word of each header record is the index of its text). The shop now uses the game's real gadget names (`PERK_*_NAME`), e.g. Gemology, Missile Jammer, Dezapinator, Flash. The short descriptions are still mine. Two shop items, Vehicle Magnet and Token Magnet, are my inventions and have no real counterpart. The real list also has Flying Pig and Nerd Repellent, which are not built.
+
+The shop now shows the game's real gadget descriptions (`tools/mkgadgets.py` writes `gadgets.txt` from the string tables; the app word-wraps them). The font has no punctuation glyphs, so commas, periods and hyphens do not draw. The real descriptions describe the real gadgets; what each gadget does in this port is still my own reading, so some will not match their text.

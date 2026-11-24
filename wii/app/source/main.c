@@ -186,6 +186,26 @@ static void drawText(float x, float y, float sc, const char *t) {
     }
 }
 
+#define NSHOP_MAX 24
+static char gadTxt[NSHOP_MAX][200];   /* real gadget descriptions from gadgets.txt; empty = use shopDesc */
+static void loadGadgets(const char *dir) {
+    char pp[128]; snprintf(pp, sizeof pp, "%sgadgets.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
+    for (int i = 0; i < NSHOP_MAX && fgets(gadTxt[i], sizeof gadTxt[i], f); i++) gadTxt[i][strcspn(gadTxt[i], "\r\n")] = 0;
+    fclose(f);
+}
+/* word-wrap t into lines of at most n characters */
+static void drawWrapped(float x, float y, float sc, float lh, int n, const char *t) {
+    char ln[64]; int len = 0;
+    while (*t) {
+        int w = 0; while (t[w] && t[w] != ' ') w++;
+        if (len && len + 1 + w > n) { ln[len] = 0; drawText(x, y, sc, ln); y += lh; len = 0; }
+        if (w >= (int)sizeof ln - len - 2) w = sizeof ln - len - 2;
+        if (len) ln[len++] = ' ';
+        memcpy(ln + len, t, w); len += w; t += w; while (*t == ' ') t++;
+    }
+    if (len) { ln[len] = 0; drawText(x, y, sc, ln); }
+}
+
 #define MAXL 4
 #define MAXT 8
 typedef struct { float speed, yoff, total; int n; Spr t[MAXT]; int w[MAXT], h[MAXT]; } Layer;
@@ -357,7 +377,7 @@ int main(int argc, char **argv) {
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
-    loadSave(&best, &total);
+    loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     total = 17000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0; gTM = 0; gTG = 0; gBM = 0; gLT = 0;
 #endif
@@ -588,9 +608,9 @@ int main(int argc, char **argv) {
                     float sy = 400, sw = 260 * 0.6f, sh = 80 * 0.6f; if (tsel == 1) { sw += 8; sh += 6; } quad(&pbk, cx - sw / 2, sy - sh / 2, sw, sh, 0, 0, 1, 1); drawText(cx - 28, sy - 12, 0.7f, "SHOP");
                     if (inShop) {
                         quad(&pbk, 120, 150, 400, 250, 0, 0, 1, 1); quad(&shopS[shopI], 140, 200, 80, 80, 0, 0, 1, 1);
-                        drawText(240, 180, 0.8f, shopName[shopI]); drawText(240, 220, 0.6f, shopDesc[shopI]);
-                        snprintf(t, sizeof t, *shopOwn[shopI] ? "OWNED" : "%d COINS  A: BUY", shopPrice[shopI]); drawText(240, 260, 0.7f, t);
-                        snprintf(t, sizeof t, "YOU HAVE %d   B: BACK", total); drawText(150, 350, 0.6f, t);
+                        drawText(240, 180, 0.8f, shopName[shopI]); if (gadTxt[shopI][0]) drawWrapped(240, 212, 0.45f, 18, 31, gadTxt[shopI]); else drawText(240, 220, 0.6f, shopDesc[shopI]);
+                        snprintf(t, sizeof t, *shopOwn[shopI] ? "OWNED" : "%d COINS  A: BUY", shopPrice[shopI]); drawText(240, 318, 0.7f, t);
+                        snprintf(t, sizeof t, "YOU HAVE %d   B: BACK", total); drawText(150, 362, 0.6f, t);
                     }
                 }
             } else if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
