@@ -336,7 +336,8 @@ int main(int argc, char **argv) {
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
-    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr shopS[4] = {{0}, {0}, {0}, {0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
+    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr colH = {0}, colB = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr"), cst = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
+    Spr shopS[4] = {{0}, {0}, {0}, {0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
 #ifdef AUTOTEST
@@ -358,7 +359,13 @@ int main(int argc, char **argv) {
                 if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % 4; if (td & WPAD_BUTTON_UP) shopI = (shopI + 3) % 4; if (td & WPAD_BUTTON_A) { int *own = shopI == 3 ? &gVMag : shopI == 2 ? &gDud : shopI ? &gSlow : &gMagnet, pr = shopI == 3 ? 600 : shopI == 2 ? 450 : shopI ? 400 : 500; if (!*own && total >= pr) { total -= pr; *own = 1; writeSave(best, total); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
-            if (doRestart || ((btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); dudLeft = gDud ? 3 : 0; cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
+            if (doRestart || ((btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); dudLeft = gDud ? 3 : 0; cst = 0;
+#ifdef AUTOTEST
+            nextBoss = 300;
+#else
+            nextBoss = 1500;
+#endif
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
@@ -415,6 +422,14 @@ int main(int argc, char **argv) {
             if (mst == 0 && dist >= mStart && --mwait <= 0) { mwait = 120; if (rand() % 100 < mProb) { mst = 1; mtick = 0; my = y + 45; } }
             else if (mst == 1) { float t = y + 45; my += fminf(fmaxf(t - my, -mChase * 2), mChase * 2); if (++mtick > 90) { mst = 2; mx = W; } }
         }
+        if (haveCol && !dead && state == 1) {   /* Colossatron: a head and 6 body segments sweep in from the right in a sine wave; touching one is a hit; 25 coins for outlasting it */
+            if (!cst && dist >= nextBoss && cur < 0 && mst == 0) { cst = 1; cbx = W + 40; nextBoss = dist + 2500; }
+            if (cst) {
+                cbx -= 4.5f;
+                for (int i = 0; i < 7; i++) { float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f); if (sx < 150 && sx + 56 > 60 && fabsf(sy + 28 - (y + 45)) < 42) HIT(); }
+                if (cbx + 7 * 44 < -64) { cst = 0; score += 25; }
+            }
+        }
         if (mst == 2 && !dead) {
             mx -= mSpeed * (gSlow ? 0.72f : 1.f);   /* Slow Missiles gadget: perks.xml value1 0.72 */
             if (mx < 150 && mx + 64 > 60 && fabsf(my - (y + 45)) < 28) { if (dudLeft > 0) dudLeft--; else HIT(); mst = 0; sfx_play(sME, 0); }   /* Dud Missiles: perks.xml value1 3 */
@@ -463,6 +478,7 @@ int main(int argc, char **argv) {
             quad(&emit, zx - hx - 16, zy - hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, zx + hx - 16, zy + hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
         }
+        if (cst) for (int i = 6; i >= 0; i--) { float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f); if (i) quad(&colB, sx, sy, 56, 56, 0, 0, 1, 1); else quad(&colH, sx - 8, sy - 4, 64, 64, 1, 0, 0, 1); }
         if (mst == 1 && (mtick / 8) % 2 == 0) { int fr = (frame / 8) & 3; quad(&alert, W - 70, my - 32, 64, 64, fr / 4.f, 0, (fr + 1) / 4.f, 1); }
         if (mst == 2) { int fr = (frame / 4) & 3; quad(&missile, mx, my - 16, 64, 32, fr / 4.f, 0, (fr + 1) / 4.f, 1); }
         if (cur >= 0) for (int i = 0; i < pats[cur].n; i++) {

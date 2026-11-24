@@ -326,3 +326,7 @@ When Barry is hit on foot he now falls and bounces during the 60-frame death fre
 ### Shop: Vehicle Magnet
 
 Fourth item: while riding a vehicle, coins within about 190 px are pulled in (the game sells per-vehicle magnets: "Upgrade your sweet ride by adding a coin magnet"). One item covers all 13 vehicles here, it reuses the Coin Magnet icon, and the 600-coin price is mine. `save.txt` bit 8 marks it. The fake-input build buys all four from 2000 coins (109 left after the first run, save ends with `15`); the pickup effect itself was not isolated.
+
+### Colossatron (my own boss)
+
+Every 2500 m from 1500 m the game sends in a Colossatron: the real head and body-segment art as a snake of 7 pieces that sweeps in from the right in a sine wave; touching a piece is a hit (a vehicle absorbs it as usual), and outlasting it gives 25 coins. **This is my own design**: the real boss logic is native code, so the speed, wave, spacing and reward are guesses, and it has no jaw, attacks, health or music (`Music_Colossatron.ogg` exists but is not used). The test build triggers it at 300 m; seen on screen in Dolphin, the hit and reward paths were not exercised.
