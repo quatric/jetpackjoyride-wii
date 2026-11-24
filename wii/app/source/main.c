@@ -312,7 +312,8 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
 #define DIST(sc) ((int)((sc) / 27.f))
-#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 90; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; sfx_play(sHurt, 0); } } while (0)
+/* inv = 42: settings.xml IMMUNITY_TIME 700, read as milliseconds (42 frames at 60 fps; was 90) */
+#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 42; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();

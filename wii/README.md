@@ -356,3 +356,7 @@ The gap between laser patterns used a fixed 60 frames. It now follows `LevelPaci
 ### Distance scale
 
 The distance counter was `scroll / 2`, about 120 "metres" a second, which put every distance-based table in the APK (laser and missile start distances, pacing bands, vehicle spawn, the boss) far too early. It is now `scroll / 27`: `settings.xml` `DISTANCE_DIVISOR` is 18 and our scroll is the game's pixels times 1.5, giving about 9 m/s at 4 px per frame, so 1000 m takes under two minutes. The unit reading is an inference from that one value, not checked against the real game. The fake-input test build now dies at 43-51 m (its boss trigger there is 30 m and the fake input cannot dodge), so its old 700-1200 m runs no longer compare.
+
+### Immunity after losing a vehicle
+
+The grace period after a vehicle is destroyed is now 42 frames: `settings.xml` `IMMUNITY_TIME` is 700, which I read as milliseconds (it was 90 frames). The unit is a guess. The test build still runs normally.
