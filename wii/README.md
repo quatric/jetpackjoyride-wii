@@ -116,3 +116,6 @@ reuse the Hog's.
 `wii/package.sh` makes a Homebrew Channel zip (`apps/jetpackjoyride/boot.dol` + `meta.xml`) for releases, which is what
 libwiiupdate installs. The game assets are extracted from the APK and must not be redistributed, so the default zip has
 none; `wii/package.sh <sd-layout folder>` bundles them for your own SD card only.
+
+More stand-in sounds (picked by name): `dud_zapper_pop` -> `zap.ogg` when a zapper appears, `mech_turkey_death` ->
+`vdie.ogg` when a vehicle is destroyed.

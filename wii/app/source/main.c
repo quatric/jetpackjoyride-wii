@@ -259,7 +259,7 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     int c = (f - 1) % VEH[vt].cols, r = (f - 1) / VEH[vt].cols, fw = VEH[vt].fw, fh = VEH[vt].fh;
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, r * (float)fh / VEH[vt].ph, (c + 1) * (float)fw / VEH[vt].pw, (r + 1) * (float)fh / VEH[vt].ph);
 }
-#define HIT() do { if (mech == 2) { mech = 0; inv = 90; sfx_play(sHurt, 0); } else if (!inv) { dead = 60; sfx_play(sHurt, 0); } } while (0)
+#define HIT() do { if (mech == 2) { mech = 0; inv = 90; sfx_play(sVDie, 0); } else if (!inv) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
@@ -278,8 +278,8 @@ int main(int argc, char **argv) {
     int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
-    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[3], sVj[3]; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1]};
-        for (int i = 0; i < 10; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[2] = sVm[1]; sVj[2] = sVj[1]; }
+    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[3], sVj[3], sZap, sVDie; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie};
+        for (int i = 0; i < 12; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[2] = sVm[1]; sVj[2] = sVj[1]; }
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
@@ -341,7 +341,7 @@ int main(int argc, char **argv) {
             if (mx < -64) { mst = 0; }
         }
         if (!dead) {
-            if (zi < 0) { if (dist >= zGlobalSd && --zwait <= 0) { zwait = 150; if (rand() % 100 < zGlobalP) { zi = pickZapper(dist, cur >= 0); if (zi >= 0) { ztick = 0; zx = W + 100; zlen = zp[zi].minL + (zp[zi].maxL - zp[zi].minL) * (rand() / (RAND_MAX + 1.f)); zy = 90 + rand() % 220; } } } }
+            if (zi < 0) { if (dist >= zGlobalSd && --zwait <= 0) { zwait = 150; if (rand() % 100 < zGlobalP) { zi = pickZapper(dist, cur >= 0); if (zi >= 0) { ztick = 0; sfx_play(sZap, 0); zx = W + 100; zlen = zp[zi].minL + (zp[zi].maxL - zp[zi].minL) * (rand() / (RAND_MAX + 1.f)); zy = 90 + rand() % 220; } } } }
             else {
                 ztick++; zx -= 4;
                 ZPat *z = &zp[zi]; int period = z->on + z->off; int lethal = period <= 1 || (ztick % period) < z->on;
