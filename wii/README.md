@@ -95,3 +95,8 @@ starts on the Mech at 100 m so it can be checked in Dolphin (verified: ride, hop
 
 The Hog (`Vehicles/Jetlane/Hog.xml`: 4x7 grid of 64 px frames, gravity .3, boost 6.5/.6) rides the same way as the Mech;
 the crate picks one of the two at random. Its fire/mount animations are not used yet.
+
+Head placement on vehicles is real data: `Characters/Vehicles/*/Vehicle*Data.xml` lists, per vehicle frame, the head's
+offset from the frame centre, rotation and head-sheet frame. `tools/mkvhead.py out.h MechData.xml HogData.xml` bakes the
+default skin into `app/source/vhead.h` (rotation is not applied yet). Only vehicles have such files; Barry's own on-foot
+head offsets are still a guess.

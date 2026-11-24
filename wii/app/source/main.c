@@ -11,6 +11,7 @@
 #include "input_wii.h"
 #include "wiiupdate.h"
 #include "audio.h"
+#include "vhead.h"
 
 #define W 640
 #define H 480
@@ -381,8 +382,11 @@ int main(int argc, char **argv) {
         if (mpick > -900 && haveMech) mechQuad(&mechS[vt], vt, mpick, H - 30, 80, vt ? 1 : 6);
         if (mech == 2 && haveMech && !(vt && !haveHog)) {
             int g = y >= H - 121, f = vt ? (g ? 1 + (frame / 4) % 4 : 5 + (frame / 4) % 4) : g ? mechDrive[(frame / 2) % 14] : (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
-            mechQuad(&mechS[vt], vt, 20, y + 100, vt ? 130 : 150, f);
-            if (haveRig) quad(&bHead, 62, y - 6, 60, 60, 0, 0, 0.25f, 0.125f);
+            float sz = vt ? 130 : 150, k = sz / VEH[vt].fw; mechQuad(&mechS[vt], vt, 20, y + 100, sz, f);
+            if (haveRig) {   /* head placement from Vehicle*Data.xml (offset from frame centre; rotation ignored) */
+                const signed char *h = vt ? VHEAD1[f] : VHEAD0[f]; int c = (h[2] - 1) % 4, r = (h[2] - 1) / 4; float hs = 32 * k;
+                quad(&bHead, 20 + sz / 2 + h[0] * k - hs / 2, y + 100 - sz / 2 + h[1] * k - hs / 2, hs, hs, c / 4.f, r / 8.f, (c + 1) / 4.f, (r + 1) / 8.f);
+            }
         } else if (inv && (frame / 3) & 1) { } else
         if (haveRig) {   /* the game's own default costume: row 0 run, 1 thrust, 2 fall */
             int onGround = y >= H - 121, thrust = btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2);
