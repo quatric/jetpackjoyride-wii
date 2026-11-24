@@ -295,7 +295,7 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     float va = r * (float)fh / VEH[vt].ph, vb = (r + 1) * (float)fh / VEH[vt].ph;
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
-#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 90; sfx_play(sVDie, 0); } else if (!inv) { dead = 60; sfx_play(sHurt, 0); } } while (0)
+#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 90; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
@@ -314,8 +314,8 @@ int main(int argc, char **argv) {
     int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
-    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[5], sVj[5], sGC, sTP, sZap, sVDie, sJS, sJE, sC2, sC3, sMS, sLS, sME; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg", "bmount.ogg", "bflap.ogg", "jstart.ogg", "jstop.ogg", "coin2.ogg", "coin3.ogg", "mstep.ogg", "lstart.ogg", "mexp.ogg", "gchg.ogg", "cft.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie, &sVm[2], &sVj[2], &sJS, &sJE, &sC2, &sC3, &sMS, &sLS, &sME, &sGC, &sTP};
-        for (int i = 0; i < 23; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[3] = sVm[0]; sVj[3] = sGC; sVm[4] = sVm[0]; sVj[4] = sTP; }
+    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[5], sVj[5], sGC, sTP, sSt1, sSt2, sLand, sZap, sVDie, sJS, sJE, sC2, sC3, sMS, sLS, sME; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg", "zap.ogg", "vdie.ogg", "bmount.ogg", "bflap.ogg", "jstart.ogg", "jstop.ogg", "coin2.ogg", "coin3.ogg", "mstep.ogg", "lstart.ogg", "mexp.ogg", "gchg.ogg", "cft.ogg", "step1.ogg", "step2.ogg", "land.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1], &sZap, &sVDie, &sVm[2], &sVj[2], &sJS, &sJE, &sC2, &sC3, &sMS, &sLS, &sME, &sGC, &sTP, &sSt1, &sSt2, &sLand};
+        for (int i = 0; i < 26; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } sVm[3] = sVm[0]; sVj[3] = sGC; sVm[4] = sVm[0]; sVj[4] = sTP; }
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
         if (state == 1 && (btnDown() & WPAD_BUTTON_PLUS)) paused ^= 1;
         if (paused && state == 1) { dist = (int)(scroll / 2); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
         if (state != 1) { paused = 0;
-            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
+            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
@@ -365,7 +365,11 @@ int main(int argc, char **argv) {
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
-        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total); } }
+        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total);
+#ifdef AUTOTEST
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d\n", lvl, vt, lastDist, tick); fclose(df); } }   /* headless check without screenshots */
+#endif
+        } }
         else scroll += 4;
         frame++;
         dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
@@ -404,7 +408,11 @@ int main(int argc, char **argv) {
         prevCur = cur; prevMst = mst;
         { int thrust = !dead && mech != 2 && (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2));
           if (thrust && !sfx_playing(jetV)) { sfx_play(sJS, 0); jetV = sfx_play(sJet, 1); } else if (!thrust && jetV > 0) { sfx_stop(jetV); jetV = -1; sfx_play(sJE, 0); }
-          if (mech == 2 && vt == 0 && y >= H - 121 && frame % 14 == 0) sfx_play(sMS, 0); }
+          if (mech == 2 && vt == 0 && y >= H - 121 && frame % 14 == 0) sfx_play(sMS, 0);
+          { static int wasAir; int air = y < H - 121;
+            if (!dead && mech != 2 && !air && frame % 9 == 0) sfx_play((frame / 9) & 1 ? sSt1 : sSt2, 0);
+            if (!dead && mech != 2 && wasAir && !air) sfx_play(sLand, 0);
+            wasAir = air; } }
         render:
         GX_InvVtxCache(); GX_InvalidateTexAll();
         drawLevel(scroll);

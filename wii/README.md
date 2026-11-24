@@ -199,3 +199,8 @@ at most 0.93 MB (CMPR backdrops and foreground; worst of the 34 levels), decoded
 two 8 KB-ish Tremor streaming buffers for the music (the 131 s music file is streamed, 22 MB if it were decoded, so it must stay
 streamed). About 5 MB of textures and audio in total against 24 MB MEM1, so there is room, but the first run on a console is
 still the real test (fat access speed and loading time between levels are unknown).
+
+Player sounds from `PLAYER_PACKAGE`: `Player_hurt_1`, alternating `run_metal_left_1`/`run_metal_right_1` footsteps on foot,
+`jetpack_land_1` on touching down. Bug fixed along the way: on the frame a run ended, a laser still overlapping Barry re-armed the
+death timer, so the next run died instantly at 0 m; the timer is now cleared on restart and only armed while playing. The
+AUTOTEST build appends one `run lvl .. dist ..` line per run to `dbg.txt` so this can be checked without screenshots.
