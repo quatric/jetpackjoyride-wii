@@ -204,3 +204,8 @@ Player sounds from `PLAYER_PACKAGE`: `Player_hurt_1`, alternating `run_metal_lef
 `jetpack_land_1` on touching down. Bug fixed along the way: on the frame a run ended, a laser still overlapping Barry re-armed the
 death timer, so the next run died instantly at 0 m; the timer is now cleared on restart and only armed while playing. The
 AUTOTEST build appends one `run lvl .. dist ..` line per run to `dbg.txt` so this can be checked without screenshots.
+
+`xml/vehicleProbability.xml` lists the real vehicle set (Mech, Hog, GravitySuit, Teleporter, ProfitBird, Dragon, JetSki, Sled,
+Delorean, HoverBoard, Starship, Ecto, IceSkates; `spawnRange` 650) and `Vehicles/*.xml` give per-vehicle `<probability>` (Mech 20, Hog 20,
+ProfitBird 50). Crate spawns now pick by those weights (20 where the APK has no file). The weighted pick compiles but the
+AUTOTEST build forces a vehicle, so it was not exercised in Dolphin; the other eight vehicles are still not implemented.

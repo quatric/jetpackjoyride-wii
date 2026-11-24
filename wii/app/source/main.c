@@ -357,7 +357,9 @@ int main(int argc, char **argv) {
           }
           wasHeld = held; }
         y += vy; if (inv) inv--;
-        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; int ok[5]; for (int i = 0; i < 5; i++) if (haveV[i]) ok[nV++] = i; if (nV) vt = ok[rand() % nV]; else mpick = -999; }
+        if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[5] = {20, 20, 50, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
+            int tw = 0; for (int i = 0; i < 5; i++) if (haveV[i]) tw += vw[i];
+            if (tw) { int r = rand() % tw; for (int i = 0; i < 5; i++) if (haveV[i] && (r -= vw[i]) < 0) { vt = i; break; } nV = 1; } else mpick = -999; }
 #ifdef AUTOTEST
         if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 5] ? lvl % 5 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
