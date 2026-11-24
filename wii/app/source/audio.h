@@ -1,6 +1,7 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 void audio_start(const char *oggPath);   /* loops until audio_stop() */
+void audio_switch(const char *oggPath);   /* change track while playing */
 void audio_stop(void);
 int sfx_load(const char *oggPath);          /* id, or -1 */
 int sfx_play(int id, int loop);             /* voice, or -1 */

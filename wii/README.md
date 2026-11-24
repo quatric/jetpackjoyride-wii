@@ -344,3 +344,7 @@ The game-over screen now also shows the run's coins and the running total, and a
 ### Memory check
 
 The sprite files loaded at start now total about 4.4 MB (largest: `mech.spr` 0.5 MB) plus about 0.25 MB of encoded sound effects (a few MB once decoded, my estimate; the 1.5 MB music file is streamed, not loaded), and one level's backdrop and foreground sheets on top. That runs fine in Dolphin (24 MB MEM1 + 64 MB MEM2), but I have not measured the heap on a console or checked which of the two memory areas libogc's `malloc` draws from, so a real Wii could run tighter than Dolphin suggests.
+
+### Music switching
+
+The music thread can now change tracks (`audio_switch`): `Music_Shop` while the shop is open, `Music_Colossatron` during the boss, `Music_Hog` while riding the Hog, otherwise `Music_Level` (all from the APK; which plays when is my mapping, and the title has no `Music_Menu` because the APK ships it only as m4a). The test build logs each switch: shop at tick 91, back at 171, boss at 781, back at 1194, and the run finished normally. I could not listen to Dolphin's audio, so that the right track is audible is unconfirmed.

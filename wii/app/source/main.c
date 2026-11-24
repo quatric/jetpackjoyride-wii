@@ -318,6 +318,7 @@ int main(int argc, char **argv) {
     int haveB = 1, haveC = 1;
     loadPattern(); loadLasers();
     { char mp[160]; snprintf(mp, sizeof mp, "%smusic.ogg", dir); audio_start(mp); }
+    char musicPath[4][160]; { const char *mn[4] = {"music.ogg", "mshop.ogg", "mhog.ogg", "mcolo.ogg"}; for (int i = 0; i < 4; i++) snprintf(musicPath[i], 160, "%s%s", dir, mn[i]); }   /* Music_Level, Music_Shop, Music_Hog, Music_Colossatron from SoundFiles/musicDesc; which one plays when is my mapping */
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
     loadMissile(); loadZappers(); loadFont();
@@ -348,6 +349,11 @@ int main(int argc, char **argv) {
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
+        { int mi = inShop && state == 0 ? 1 : cst ? 3 : (mech == 2 && vt == 1) ? 2 : 0; static int lastMi = 0; if (mi != lastMi) { lastMi = mi; audio_switch(musicPath[mi]);
+#ifdef AUTOTEST
+ { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "music %d tick %d\n", mi, tick); fclose(df); } }
+#endif
+ } }
         if (btnDown() & WPAD_BUTTON_HOME) break;
         if (state == 1 && (btnDown() & WPAD_BUTTON_PLUS)) { paused ^= 1; psel = 2; }
         if (paused && state == 1 && havePause) {

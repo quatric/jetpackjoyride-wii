@@ -42,7 +42,7 @@ python3 -I "$T/mkmissile.py" "$A/xml/MissileProbability.xml" "$O/missile.txt"
 python3 -I "$T/mkzappers.py" "$A/xml/ObstaclePatterns.xml" "$O/zappers.txt"
 python3 -I "$T/mkpatterns.py" "$A/patterns" "$O/pattern.txt"
 python3 -I "$T/mklevels.py" "$A/xml/LevelFiles" "$S" "$O/levels"
-cp "$A/Music_Level.ogg" "$O/music.ogg"
+cp "$A/Music_Level.ogg" "$O/music.ogg"; cp "$A/Music_Shop.ogg" "$O/mshop.ogg"; cp "$A/Music_Hog.ogg" "$O/mhog.ogg"; cp "$A/Music_Colossatron.ogg" "$O/mcolo.ogg"
 # sound events (names from xml/SoundFiles.xml packages): <ogg in sound/> <name used by the app>
 while read src dst; do [ -n "$src" ] && cp "$A/sound/$src.ogg" "$O/$dst.ogg"; done <<'L'
 coin_pickup_1 coin
