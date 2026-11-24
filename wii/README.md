@@ -245,3 +245,16 @@ with type and default): `ComponentFPS` has `id, comment, isPickable, updateMask,
 `ComponentText` has 114 properties. All 91 `Component*.xml` definitions load. These types and defaults are what the component
 stream in a `.uiscreen` has to be decoded against; the stream's `0007aaa1 <n>` record numbers did not map directly onto these
 indices in a first try on `fpscounterscreen`, so the stream layout is still open.
+
+### .uiscreen components, decoded (391 of 471 files)
+
+`tools/uidecode.py x.uiscreen` lists the components of a screen with their class, id and property values. The stream, as found by
+comparing `fpscounterscreen.uiscreen` with its XML twin (identical positions 4,4,0 / 123,3,0, sizes 238x47 / 60x41, texts FPS and FPI,
+alignments, dock Fill/None, colour 2,2,2,45): each component is `HCIU 0 <id> 0xcb980001`, a `TAB 2 5 <id> <hasParent> <class>
+<sibling> 0` header and `TAB 2 1 0 0xcb980b91 EMPS`, then ten typed slots (`0x7aaa1 <type>`, empty `0x7bbbe` or `0x7bbb1 <n>` followed by n
+`TAB 2 2 <property name index> ...` entries, closed by `0x7fff1`), then `MAIU BAIU 0 EMIU 0 0 0 0xcf980001`. Slot types: 1 bool, 2 enum
+string, 3 vector3, 4 vector2, 5 float, 6 rotation, 7 int, 8 colour (4 floats), 10 text; strings are `u32 len + bytes`. Trigger and event
+sections between components (`HTVE`, `CEIU`, `FEIU`, SetProperty actions) are skipped, not decoded, and nesting is only available as the
+`hasParent`/`sibling` fields, not yet turned into a tree. 391 of 471 screens decode to the end; the other 80 each break on some
+different entry shape (slot 9, odd prefixes) and are not handled. Texture references and button actions, which a real menu needs, live in
+properties and triggers that I have not looked at yet, so no menu is drawn from this yet.
