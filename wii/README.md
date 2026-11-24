@@ -409,3 +409,7 @@ Items 17 and 18, real icons, both tied to the spin token and both my own reading
 ## Game-over panel
 
 The game-over text is now drawn over the real `menus/popupBacking` panel from the APK. The text and layout are mine; the real results screen (leaderboards, rewards) is not ported.
+
+## Real text
+
+`tools/strtab.py` decodes the APK's `.str` string tables (`translations_header.str` holds the keys, `translations_<Language>.str` the text; the last word of each header record is the index of its text). The shop now uses the game's real gadget names (`PERK_*_NAME`), e.g. Gemology, Missile Jammer, Dezapinator, Flash. The short descriptions are still mine. Two shop items, Vehicle Magnet and Token Magnet, are my inventions and have no real counterpart. The real list also has Flying Pig and Nerd Repellent, which are not built.
