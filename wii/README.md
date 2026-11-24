@@ -139,3 +139,8 @@ plain-XML sibling `fpscounterscreen.xml` is the reference tree (component > prop
 against; no decoder exists yet.
 
 PLUS pauses and resumes during a run. The AUTOTEST build fakes PLUS at ticks 300 and 480 of each 600; verified in Dolphin (distance frozen under PAUSED, then the run continues).
+
+`tools/uistrings.py file.uiscreen` lists a screen's string table (all 471 parse). For `Pause.uiscreen` it shows the
+component classes (Window, Button, Quad, Text, Texture, TableLayout, Swipie, ...), data bindings (`this.score`,
+`this.missionText`, `this.buttonCashIn`) and trigger names (`PopUpOpen`, `onScreen`, `offScreen`, `close`). Positions, sizes and
+texture references live in the tagged stream after the table, still undecoded.
