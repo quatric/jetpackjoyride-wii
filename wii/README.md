@@ -47,7 +47,7 @@ SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `be
     python3 -I wii/tools/mkspr.py jj_sprites/missileAlert.png alert.spr 0 0 256 64
     python3 -I wii/tools/mkzappers.py <assets>/xml/ObstaclePatterns.xml zappers.txt
     python3 -I wii/tools/mkspr.py jj_sprites/electricbolt.png bolt.spr
-    python3 -I wii/tools/mklevel.py <assets>/xml/LevelFiles/warehouse.xml jj_sprites levels/0   # repeat per level (1, 2, ...), then echo N > levels/count.txt
+    python3 -I wii/tools/mklevels.py <assets>/xml/LevelFiles jj_sprites levels   # converts every fully resolvable level (34), writes count.txt
     python3 -I wii/tools/mkspr.py jj_sprites/textures/effects/jetpack/standardflame.png flame.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultBody.png body.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultHead.png head.spr

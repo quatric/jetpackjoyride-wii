@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
         y += vy;
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
-        if (dead) { if (--dead == 0) { y = 300; vy = 0; scroll = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; } }
+        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; } }
         else scroll += 4;
         frame++;
         dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
             if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
             if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
         }
-        { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); }
+        { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); snprintf(hud, sizeof hud, "LEVEL %d/%d", lvl + 1, nLevels); drawText(20, 78, 0.5f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
     audio_stop(); INPUT_Shutdown(); return 0;
