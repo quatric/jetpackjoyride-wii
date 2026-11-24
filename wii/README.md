@@ -322,3 +322,7 @@ Third gadget, Dud Missiles (real icon; the first 3 missiles of each run do no ha
 ### Death tumble
 
 When Barry is hit on foot he now falls and bounces during the 60-frame death freeze, using `settings.xml` `DEATH_GRAVITY` 0.24 and `MIN_BOUNCE_VELOCITY` 4 (scaled by the 1.5 screen factor; the bounce damping is my guess). Distance and the run log are unchanged. Seen in Dolphin: after a mid-air hit he ends on the floor. `settings.xml` also lists `BARRY_GRAVITY` 0.15, `BARRY_BOOST` 0.36, `BARRY_FRICTION` 0.98 and `IMMUNITY_TIME` 700; the jetpack feel still uses my own earlier numbers because the units of those are not known.
+
+### Shop: Vehicle Magnet
+
+Fourth item: while riding a vehicle, coins within about 190 px are pulled in (the game sells per-vehicle magnets: "Upgrade your sweet ride by adding a coin magnet"). One item covers all 13 vehicles here, it reuses the Coin Magnet icon, and the 600-coin price is mine. `save.txt` bit 8 marks it. The fake-input build buys all four from 2000 coins (109 left after the first run, save ends with `15`); the pickup effect itself was not isolated.

@@ -38,7 +38,7 @@ static int loadSpr(Spr *s, const char *name) {
 static int tick;   /* frame counter for the AUTOTEST build, which fakes input so Dolphin can run headless */
 static u32 btnDown(void) {
 #ifdef AUTOTEST
-    if (tick == 60 || tick == 125 || tick == 135) return WPAD_BUTTON_DOWN; if (tick == 90 || tick == 120 || tick == 130 || tick == 140) return WPAD_BUTTON_A; if (tick == 150) return WPAD_BUTTON_B; if (tick == 180) return WPAD_BUTTON_UP;   /* shop: select, open, buy, close, back to START */
+    if (tick == 60 || tick == 125 || tick == 135 || tick == 145) return WPAD_BUTTON_DOWN; if (tick == 90 || tick == 120 || tick == 130 || tick == 140 || tick == 150) return WPAD_BUTTON_A; if (tick == 160) return WPAD_BUTTON_B; if (tick == 180) return WPAD_BUTTON_UP;   /* shop: select, open, buy, close, back to START */
     return (tick == 420 || (tick > 420 && tick % 600 == 90)) ? WPAD_BUTTON_A : (tick % 600 == 300 || tick % 600 == 480) ? WPAD_BUTTON_PLUS : 0;   /* start / restart / pause / resume */
 #else
     return INPUT_ButtonsDown();
@@ -292,13 +292,13 @@ static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; 
     {1, 32, 32, 32, 32, 0, 0, 0, 0, 0, "drb.spr"},   /* 12: Dragon, drawn from the parts below (no pick table entry of its own) */
     {1, 64, 64, 64, 64, 0, 0, 0, 0, 0, "drh.spr"}, {1, 32, 32, 32, 32, 0, 0, 0, 0, 0, "drb.spr"}, {4, 32, 32, 128, 32, 0, 0, 0, 0, 0, "drf.spr"} };   /* 13 head, 14 body, 15 flap: real sprites, my own layout (offsets live in native code) */   /* Jetski: one static 64x32 frame, no rider or handle; Hog-like physics (guess) */   /* Sleigh: real 4x2 animation sheet, reindeer not drawn; Hog-like physics (guess) */   /* Starship: one static frame; Hog-like physics (guess) */   /* DeLorean: one static frame; Hog-like physics (guess) */   /* Ecto-1: one static frame, no rider; Hog-like physics (guess) */   /* Ice Skates: real 4x4 sheet, rider baked in; Hog-like physics (guess) */   /* Hoverboard: sheet is a real 4x3 grid with the rider baked in; the physics are the Hog's, a guess */   /* Teleporter: press = vanish and reappear at a random height; sheet is real, timings are mine */   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
 static const int vpick[16] = {6, 1, 13, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static int gMagnet, gSlow, gDud;   /* shop: Coin Magnet owned (third number in save.txt) */
+static int gMagnet, gSlow, gDud, gVMag;   /* shop: Coin Magnet owned (third number in save.txt) */
 static void loadSave(int *best, int *total) {   /* save.txt: best distance, lifetime coins */
     char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
-    int b = 0, t = 0, m = 0; if (fscanf(f, "%d %d %d", &b, &t, &m) >= 2 && b >= 0 && t >= 0) { *best = b; *total = t; gMagnet = m & 1; gSlow = m >> 1 & 1; gDud = m >> 2 & 1; } fclose(f);
+    int b = 0, t = 0, m = 0; if (fscanf(f, "%d %d %d", &b, &t, &m) >= 2 && b >= 0 && t >= 0) { *best = b; *total = t; gMagnet = m & 1; gSlow = m >> 1 & 1; gDud = m >> 2 & 1; gVMag = m >> 3 & 1; } fclose(f);
 }
 static void writeSave(int best, int total) {
-    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d %d\n", best, total, gMagnet | gSlow << 1 | gDud << 2); fclose(f);
+    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d %d\n", best, total, gMagnet | gSlow << 1 | gDud << 2 | gVMag << 3); fclose(f);
 }
 static int mflip;   /* draw the next vehicle quad upside down (Gravity Suit on the ceiling) */
 static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h = drawn height; width keeps the frame's aspect */
@@ -336,11 +336,11 @@ int main(int argc, char **argv) {
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
-    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr shopS[3] = {{0}, {0}, {0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
+    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr shopS[4] = {{0}, {0}, {0}, {0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
 #ifdef AUTOTEST
-    total = 1500; gMagnet = 0; gSlow = 0; gDud = 0;
+    total = 2000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0;
 #endif
     for (;;) {
         INPUT_Update(); tick++;
@@ -355,7 +355,7 @@ int main(int argc, char **argv) {
         if (state != 1) { paused = 0;
             u32 td = btnDown();
             if (state == 0 && haveMag) {   /* title: START / SHOP; the shop sells the Coin Magnet (price is mine: the APK has none) */
-                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % 3; if (td & WPAD_BUTTON_UP) shopI = (shopI + 2) % 3; if (td & WPAD_BUTTON_A) { int *own = shopI == 2 ? &gDud : shopI ? &gSlow : &gMagnet, pr = shopI == 2 ? 450 : shopI ? 400 : 500; if (!*own && total >= pr) { total -= pr; *own = 1; writeSave(best, total); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
+                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % 4; if (td & WPAD_BUTTON_UP) shopI = (shopI + 3) % 4; if (td & WPAD_BUTTON_A) { int *own = shopI == 3 ? &gVMag : shopI == 2 ? &gDud : shopI ? &gSlow : &gMagnet, pr = shopI == 3 ? 600 : shopI == 2 ? 450 : shopI ? 400 : 500; if (!*own && total >= pr) { total -= pr; *own = 1; writeSave(best, total); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
             if (doRestart || ((btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); dudLeft = gDud ? 3 : 0; cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
         }
         if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
@@ -448,7 +448,7 @@ int main(int argc, char **argv) {
         drawLevel(scroll);
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
-            if ((gMagnet && hypotf(px + 8 - 95, cy[i] + 8 - (y + 45)) < 130) || (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90)) { cgot[i] = 1; score++; sfx_play(rand() % 3 == 0 ? sC2 : rand() & 1 ? sC3 : sCoin, 0); continue; }
+            if ((gMagnet && hypotf(px + 8 - 95, cy[i] + 8 - (y + 45)) < 130) || (gVMag && mech == 2 && hypotf(px + 8 - 95, cy[i] + 8 - (y + 50)) < 190) || (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90)) { cgot[i] = 1; score++; sfx_play(rand() % 3 == 0 ? sC2 : rand() & 1 ? sC3 : sCoin, 0); continue; }
             int fr = (frame / 4 + i) & 7; quad(&coin, px, cy[i], 16, 16, fr / 8.f, 0, (fr + 1) / 8.f, 1);
         }
         if (zi >= 0) {
@@ -519,8 +519,8 @@ int main(int argc, char **argv) {
                     float sy = 400, sw = 260 * 0.6f, sh = 80 * 0.6f; if (tsel == 1) { sw += 8; sh += 6; } quad(&pbk, cx - sw / 2, sy - sh / 2, sw, sh, 0, 0, 1, 1); drawText(cx - 28, sy - 12, 0.7f, "SHOP");
                     if (inShop) {
                         quad(&pbk, 120, 150, 400, 250, 0, 0, 1, 1); quad(&shopS[shopI], 140, 200, 80, 80, 0, 0, 1, 1);
-                        drawText(240, 180, 0.8f, shopI == 2 ? "DUD MISSILES" : shopI ? "SLOW MISSILES" : "COIN MAGNET"); drawText(240, 220, 0.6f, shopI == 2 ? "FIRST 3 MISSILES ARE DUDS" : shopI ? "MISSILES FLY SLOWER" : "PULLS IN NEARBY COINS");
-                        snprintf(t, sizeof t, (shopI == 2 ? gDud : shopI ? gSlow : gMagnet) ? "OWNED" : shopI == 2 ? "450 COINS  A: BUY" : shopI ? "400 COINS  A: BUY" : "500 COINS  A: BUY"); drawText(240, 260, 0.7f, t);
+                        drawText(240, 180, 0.8f, shopI == 3 ? "VEHICLE MAGNET" : shopI == 2 ? "DUD MISSILES" : shopI ? "SLOW MISSILES" : "COIN MAGNET"); drawText(240, 220, 0.6f, shopI == 3 ? "VEHICLES ATTRACT COINS" : shopI == 2 ? "FIRST 3 MISSILES ARE DUDS" : shopI ? "MISSILES FLY SLOWER" : "PULLS IN NEARBY COINS");
+                        snprintf(t, sizeof t, (shopI == 3 ? gVMag : shopI == 2 ? gDud : shopI ? gSlow : gMagnet) ? "OWNED" : shopI == 3 ? "600 COINS  A: BUY" : shopI == 2 ? "450 COINS  A: BUY" : shopI ? "400 COINS  A: BUY" : "500 COINS  A: BUY"); drawText(240, 260, 0.7f, t);
                         snprintf(t, sizeof t, "YOU HAVE %d   B: BACK", total); drawText(150, 350, 0.6f, t);
                     }
                 }
