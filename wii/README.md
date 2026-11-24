@@ -29,3 +29,21 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 
 - Input: [quatric/libwiiinput](https://github.com/quatric/libwiiinput) (`INPUT_Init`, `INPUT_Update`, `INPUT_ButtonsDown`, ...).
 - Updates: [quatric/libwiiupdate](https://github.com/quatric/libwiiupdate) (`WIIUPDATE_Start`/`WIIUPDATE_Popup` for GUI apps).
+
+## Wii app (`wii/app`) - first playable slice
+
+Builds with devkitPPC/libogc plus sibling checkouts of libwiiinput and libwiiupdate (`make` in each, then `make` here).
+Hold A/B/1/2 to fly; coins come from a pattern file; HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
+
+SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `pattern.txt`.
+
+    python3 -I wii/tools/mkspr.py jj_sprites/Barry.png barry.spr
+    python3 -I wii/tools/mkspr.py jj_sprites/CoinAlt.png coin.spr
+    cp <assets>/patterns/cashDash1.txt pattern.txt
+
+Tested in Dolphin (needs an MBR-partitioned FAT32 `sd.raw` and `[General] WiiSDCardPath` set).
+
+### Still to do for the full game
+Barry's animation (Spine/`.atlas` text + xml components), UI screens (`.uiscreen`), levels (`xml/Levels`, `LevelPacing.xml`),
+obstacles/vehicles/bosses (100 Lua scripts in `scripts/`: needs an embedded Lua), audio (ogg via libvorbisidec),
+save data, flag-6 `.tex` format, the unnamed atlas sprites, memory budget (88 MB RAM, ~800 MB of assets).
