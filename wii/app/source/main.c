@@ -180,6 +180,9 @@ int main(int argc, char **argv) {
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
     loadMissile(); loadZappers();
+    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet};
+        for (int i = 0; i < 6; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } }
+    int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
@@ -204,7 +207,7 @@ int main(int argc, char **argv) {
             else if (++ptick > pats[cur].time + 60) cur = -1;
             if (cur >= 0 && ptick > 60) for (int i = 0; i < pats[cur].n; i++) {
                 float ly = 240 - pats[cur].y[i] * 1.6f;
-                if (fabsf(ly - (y + 45)) < 22) { dead = 60; break; }
+                if (fabsf(ly - (y + 45)) < 22) { dead = 60; sfx_play(sHurt, 0); break; }
             }
         }
         if (!dead && cur < 0) {   /* missiles share the screen with lasers only when no laser pattern is active */
@@ -213,7 +216,7 @@ int main(int argc, char **argv) {
         }
         if (mst == 2 && !dead) {
             mx -= mSpeed;
-            if (mx < 150 && mx + 64 > 60 && fabsf(my - (y + 45)) < 28) dead = 60;
+            if (mx < 150 && mx + 64 > 60 && fabsf(my - (y + 45)) < 28) { dead = 60; sfx_play(sHurt, 0); }
             if (mx < -64) { mst = 0; }
         }
         if (!dead) {
@@ -223,14 +226,20 @@ int main(int argc, char **argv) {
                 ZPat *z = &zp[zi]; int period = z->on + z->off; int lethal = period <= 1 || (ztick % period) < z->on;
                 float ang = z->startAngle + (z->rotT ? (z->cw ? 1 : -1) * 360.f * ztick / z->rotT : 0);
                 float hx = cosf(ang * 0.0174533f) * zlen / 2, hy = sinf(ang * 0.0174533f) * zlen / 2;
-                if (lethal && segDist(105, y + 45, zx - hx, zy - hy, zx + hx, zy + hy) < 20) dead = 60;
+                if (lethal && segDist(105, y + 45, zx - hx, zy - hy, zx + hx, zy + hy) < 20) { dead = 60; sfx_play(sHurt, 0); }
                 if (zx < -200) zi = -1;
             }
         }
+        if (cur >= 0 && prevCur < 0) sfx_play(sLaserW, 0);
+        if (mst == 1 && prevMst == 0) sfx_play(sMissW, 0);
+        if (mst == 2 && prevMst == 1) sfx_play(sMissL, 0);
+        prevCur = cur; prevMst = mst;
+        { int thrust = !dead && (INPUT_ButtonsHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2));
+          if (thrust && !sfx_playing(jetV)) jetV = sfx_play(sJet, 1); else if (!thrust && jetV > 0) { sfx_stop(jetV); jetV = -1; } }
         GX_InvVtxCache(); GX_InvalidateTexAll();
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
-            if (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90) { cgot[i] = 1; score++; continue; }
+            if (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90) { cgot[i] = 1; score++; sfx_play(sCoin, 0); continue; }
             int fr = (frame / 4 + i) & 7; quad(&coin, px, cy[i], 16, 16, fr / 8.f, 0, (fr + 1) / 8.f, 1);
         }
         if (zi >= 0) {
