@@ -343,4 +343,4 @@ The game-over screen now also shows the run's coins and the running total, and a
 
 ### Memory check
 
-The sprite files loaded at start now total about 4.4 MB (largest: `mech.spr` 0.5 MB) plus about 1.9 MB of encoded sound effects before decoding, and one level's backdrop and foreground sheets on top. That runs fine in Dolphin (24 MB MEM1 + 64 MB MEM2), but I have not measured the heap on a console or checked which of the two memory areas libogc's `malloc` draws from, so a real Wii could run tighter than Dolphin suggests.
+The sprite files loaded at start now total about 4.4 MB (largest: `mech.spr` 0.5 MB) plus about 0.25 MB of encoded sound effects (a few MB once decoded, my estimate; the 1.5 MB music file is streamed, not loaded), and one level's backdrop and foreground sheets on top. That runs fine in Dolphin (24 MB MEM1 + 64 MB MEM2), but I have not measured the heap on a console or checked which of the two memory areas libogc's `malloc` draws from, so a real Wii could run tighter than Dolphin suggests.
