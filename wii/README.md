@@ -405,3 +405,7 @@ A spin-token pickup now exists: the real `RewardSystem/Tokens/pickup.png` gem dr
 ### Shop: Boost Machine and Lucky Token
 
 Items 17 and 18, real icons, both tied to the spin token and both my own readings: **Boost Machine** makes a token also carry you 10 m ahead; **Lucky Token** makes tokens come twice as often. 600 and 450 coins (mine); `save.txt` bits 65536 and 131072. The fake-input build buys all eighteen from 17000 coins (save ends with `262143`); neither effect was isolated in a test. Two `perks.xml` gadgets remain: Nerd Repellent (this port has no scientists to repel) and Flying Pig (no standalone art found).
+
+## Game-over panel
+
+The game-over text is now drawn over the real `menus/popupBacking` panel from the APK. The text and layout are mine; the real results screen (leaderboards, rewards) is not ported.
