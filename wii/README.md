@@ -191,3 +191,11 @@ image). The title text itself was not caught in a screenshot. No shop or upgrade
 Zapper beam art is now real: `Entities/zapEffects.tex` (512x236) holds a glow band (y 4-55) and six arc bands; `bolt.spr` is that
 whole sheet (`mkspr.py zapEffects.png bolt.spr`) and the app draws the glow plus two flickering arcs along the zapper line.
 Checked in Dolphin (yellow lightning beams at several angles). The zapper end nodes (`emit.spr`) are still the laser emitters.
+
+## RAM check for real hardware (computed from the staged files, not measured on a console)
+
+Resident at once: app sprites 2.7 MB (RGBA8; the zapper sheet 0.5 MB and Mech sheet 0.5 MB are the largest), the current level
+at most 0.93 MB (CMPR backdrops and foreground; worst of the 34 levels), decoded sound effects 1.4 MB (23 files, all mono), plus
+two 8 KB-ish Tremor streaming buffers for the music (the 131 s music file is streamed, 22 MB if it were decoded, so it must stay
+streamed). About 5 MB of textures and audio in total against 24 MB MEM1, so there is room, but the first run on a console is
+still the real test (fat access speed and loading time between levels are unknown).
