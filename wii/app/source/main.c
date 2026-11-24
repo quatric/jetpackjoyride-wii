@@ -86,6 +86,35 @@ static void loadPattern(void) {   /* '1' cells become coins; blank lines are ski
     fclose(f);
 }
 
+#define MAXP 40
+#define MAXY 16
+typedef struct { int time, n, np; float y[MAXY]; int sd[8]; float w[8]; } Pat;
+static Pat pats[MAXP]; static int npat;
+
+static void loadLasers(void) {   /* lines: P time n y.. np (startDistance weight).. */
+    char pp[128], ln[512]; snprintf(pp, sizeof pp, "%slasers.txt", dir);
+    FILE *f = fopen(pp, "r"); if (!f) return;
+    while (npat < MAXP && fgets(ln, sizeof ln, f)) {
+        char *q = ln + 1; Pat *t = &pats[npat];
+        t->time = strtol(q, &q, 10); t->n = strtol(q, &q, 10); if (t->n > MAXY) t->n = MAXY;
+        for (int i = 0; i < t->n; i++) t->y[i] = strtod(q, &q);
+        t->np = strtol(q, &q, 10); if (t->np > 8) t->np = 8;
+        for (int i = 0; i < t->np; i++) { t->sd[i] = strtol(q, &q, 10); t->w[i] = strtod(q, &q); }
+        npat++;
+    }
+    fclose(f);
+}
+
+static float patWeight(const Pat *t, int dist) { float w = 0; for (int i = 0; i < t->np; i++) if (t->sd[i] <= dist) w = t->w[i]; return w; }
+
+static int pickPattern(int dist) {   /* weighted by the game's own distance-based probabilities */
+    float tot = 0; for (int i = 0; i < npat; i++) tot += patWeight(&pats[i], dist);
+    if (tot <= 0) return -1;
+    float r = tot * (rand() / (RAND_MAX + 1.f));
+    for (int i = 0; i < npat; i++) { r -= patWeight(&pats[i], dist); if (r < 0) return i; }
+    return -1;
+}
+
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
     { FILE *t = fopen("sd:/apps/jetpackjoyride/pattern.txt", "r"); if (t) fclose(t); else dir = "fat:/apps/jetpackjoyride/"; } INPUT_Init(); INPUT_SetScreenSize(W, H);
@@ -94,7 +123,9 @@ int main(int argc, char **argv) {
     if (!loadSpr(&barry, "barry.spr")) fallbackSpr(&barry);
     if (!loadSpr(&coin, "coin.spr")) fallbackSpr(&coin);
     int haveB = 1, haveC = 1;
-    loadPattern();
+    loadPattern(); loadLasers();
+    Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
+    int cur = -1, ptick = 0, wait = 90, dead = 0;
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0; (void)score;
@@ -107,12 +138,30 @@ int main(int argc, char **argv) {
         y += vy;
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
-        scroll += 4; frame++;
+        if (dead) { if (--dead == 0) { y = 300; vy = 0; scroll = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; } }
+        else scroll += 4;
+        frame++;
+        int dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
+        if (!dead) {
+            if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = 60; } }
+            else if (++ptick > pats[cur].time + 60) cur = -1;
+            if (cur >= 0 && ptick > 60) for (int i = 0; i < pats[cur].n; i++) {
+                float ly = 240 - pats[cur].y[i] * 1.6f;
+                if (fabsf(ly - (y + 45)) < 22) { dead = 60; break; }
+            }
+        }
         GX_InvVtxCache(); GX_InvalidateTexAll();
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
             if (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90) { cgot[i] = 1; score++; continue; }
             int fr = (frame / 4 + i) & 7; quad(&coin, px, cy[i], 16, 16, fr / 8.f, 0, (fr + 1) / 8.f, 1);
+        }
+        if (cur >= 0) for (int i = 0; i < pats[cur].n; i++) {
+            float ly = 240 - pats[cur].y[i] * 1.6f; int live = ptick > 60;
+            if (!live && (ptick / 6) & 1) continue;                      /* flashing warning */
+            quad(&beam, 64, ly - (live ? 12 : 4), W - 128, live ? 24 : 8, 0, 0, 1, 1);
+            quad(&emit, 0, ly - 42, 64, 85, 0, 0, 64.f / 64, 85.f / 88);
+            quad(&emit, W - 64, ly - 42, 64, 85, 64.f / 64, 0, 0, 85.f / 88);
         }
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();

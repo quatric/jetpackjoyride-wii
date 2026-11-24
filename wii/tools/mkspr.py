@@ -2,7 +2,9 @@
 """PNG -> .spr for the Wii app: 'SPR0', u16 w,h (padded to x4), u16 realw,realh, GX_TF_RGBA8 tiled data."""
 import sys, struct
 from PIL import Image
-im = Image.open(sys.argv[1]).convert('RGBA'); rw, rh = im.size
+im = Image.open(sys.argv[1]).convert('RGBA')
+if len(sys.argv) > 6: im = im.crop(tuple(map(int, sys.argv[3:7])))   # optional crop box x0 y0 x1 y1
+rw, rh = im.size
 w, h = (rw+3)//4*4, (rh+3)//4*4
 pad = Image.new('RGBA', (w, h), (0, 0, 0, 0)); pad.paste(im, (0, 0)); px = pad.load()
 out = bytearray()

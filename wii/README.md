@@ -12,6 +12,7 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 | `.tex` | Header `TEX\1`; raw packed pixels, no mips. 4444 / 5551 / 888 / 8888 decoded by `tools/tex2png.py` (4651 of 5323). Files with flag `6` (672, e.g. `textures/RewardSystem/HUD`) use an unidentified 1.5 byte/px block format (8-byte blocks, DXT1-like but not plain DXT1). |
 | `.atlas` | Plain binary, magic `0xfe000003` (parsed by `tools/atlas.py`, sliced by `tools/atlas_extract.py`). Sprites are keyed by `FileStringHash` (`tools/hashname.py`: Jenkins lookup2, init `0x805`, path lowercased, `\\`→`/`) of the original sprite `.tex` path. Those source `.tex` files are not shipped, so names are recovered from path strings in the assets and `libmortargame.so`: 1520 of 2600 sprites named so far, the rest saved as `unknown/<hash>`. `SpineAnimation/*.atlas` are libgdx text atlases (skipped). |
 | `.uiscreen` | Chunked binary (`FSIU`/`BSIU`/`TSIU`), screen components. |
+| `bxml` (the `.xml` files, 1248 of them) | Binary XML, fully decoded by `tools/bxml.py` (string table + element/text nodes). Holds levels, laser patterns, sprite animation grids (`sprite_file`), configs. |
 | `.json`, `.lua`, `.xml`, `.ogg`, `.ttf`, `.vs/.fs` | plain; shaders are GLES and must be replaced by GX TEV setups. |
 
 ## Usage
@@ -33,12 +34,15 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 ## Wii app (`wii/app`) - first playable slice
 
 Builds with devkitPPC/libogc plus sibling checkouts of libwiiinput and libwiiupdate (`make` in each, then `make` here).
-Hold A/B/1/2 to fly; coins come from a pattern file; HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
+Hold A/B/1/2 to fly; coins come from a pattern file; lasers spawn from the game's own `LazerPatterns.xml` (distance-weighted, warning then lethal, touching one resets the run); HOME quits. Checks GitHub for updates via libwiiupdate (no popup UI yet).
 
-SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `pattern.txt`.
+SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `beam.spr`, `emit.spr`, `pattern.txt`, `lasers.txt`.
 
     python3 -I wii/tools/mkspr.py jj_sprites/Barry.png barry.spr
     python3 -I wii/tools/mkspr.py jj_sprites/CoinAlt.png coin.spr
+    python3 -I wii/tools/mkspr.py jj_sprites/laserWarning.png beam.spr
+    python3 -I wii/tools/mkspr.py jj_sprites/laser.png emit.spr 0 0 64 85
+    python3 -I wii/tools/mklasers.py <assets>/xml/LazerPatterns.xml lasers.txt
     cp <assets>/patterns/cashDash1.txt pattern.txt
 
 Tested in Dolphin (needs an MBR-partitioned FAT32 `sd.raw` and `[General] WiiSDCardPath` set).
