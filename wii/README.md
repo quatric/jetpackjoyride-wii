@@ -360,3 +360,7 @@ The distance counter was `scroll / 2`, about 120 "metres" a second, which put ev
 ### Immunity after losing a vehicle
 
 The grace period after a vehicle is destroyed is now 42 frames: `settings.xml` `IMMUNITY_TIME` is 700, which I read as milliseconds (it was 90 frames). The unit is a guess. The test build still runs normally.
+
+### Shop: Coin Multiplier
+
+Sixth item, with the real `gem` icon: every coin counts double. `perks.xml` lists `PERK_COIN_MULTIPLIER` with value 5 but nothing says what the game does with it, so the effect is my own reading; 700 coins is mine too, and `save.txt` bit 32. The fake-input build buys all six from 3500 coins and the save ends with 500 coins and `63`; the doubling itself was not isolated in a test.
