@@ -580,7 +580,7 @@ int main(int argc, char **argv) {
                 quad(&logoT, 24, 40, 360, 218, 0, 0, 360.f / 360, 218.f / 220);
                 quad(&logoB, 400, 80, 192, 270, 0, 0, 192.f / 192, 270.f / 272);
             } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
-            if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); snprintf(t, sizeof t, "COINS %d   TOTAL %d", score, total); drawText(W / 2 - 230, 225, 0.7f, t); if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 265, 0.9f, "NEW BEST"); }
+            if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); snprintf(t, sizeof t, "COINS %d   TOTAL %d", score, total); drawText(W / 2 - 230, 225, 0.7f, t); if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 265, 0.9f, "NEW BEST!"); }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
                 float cx = W / 2, cy = 320, bw = 332 * 0.75f, bh = 96 * 0.75f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.75f - 24, cy - 48, 48, 96, 0, 0, 1, 1);
                 drawText(cx + 38 * 0.75f - 55, cy - 16, 0.9f, "START");
