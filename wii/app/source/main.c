@@ -336,7 +336,9 @@ int main(int argc, char **argv) {
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
-    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr colH = {0}, colB = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr"), cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
+    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, boomDone = 0, boomHit = 0;
+    float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
+    int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[5] = {{0}, {0}, {0}, {0}, {0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
@@ -404,7 +406,7 @@ int main(int argc, char **argv) {
         }
         if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d boss %d bhit %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, bossDone, bossHit, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d boss %d bhit %d boom %d/%d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, bossDone, bossHit, boomDone, boomHit, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
@@ -427,7 +429,13 @@ int main(int argc, char **argv) {
             if (cst) {
                 cbx -= 4.5f;
                 for (int i = 0; i < 7; i++) { float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f); if (sx < 150 && sx + 56 > 60 && fabsf(sy + 28 - (y + 45)) < 42) { int d0 = dead, m0 = mech; HIT(); if (dead != d0 || mech != m0) bossHit++; } }
-                if (cbx + 7 * 44 < -64) { cst = 0; score += 25; bossDone++; }
+                if (!boomOn && (frame % 100) == 50 && cbx < W - 120) { boomOn = 1; boomX = cbx; boomY = 170 + 90 * sinf(frame * 0.05f) + 28; }
+                if (boomOn) {
+                    boomX -= 7.f; boomDone += boomX < -130;
+                    if (boomX < 150 && boomX + 120 > 60 && fabsf(boomY - (y + 45)) < 30) { int d0 = dead, m0 = mech; HIT(); if (dead != d0 || mech != m0) boomHit++; boomOn = 0; }
+                    if (boomX < -130) boomOn = 0;
+                }
+                if (cbx + 7 * 44 < -64) { cst = 0; boomOn = 0; score += 25; bossDone++; }
             }
         }
         if (mst == 2 && !dead) {
@@ -478,6 +486,7 @@ int main(int argc, char **argv) {
             quad(&emit, zx - hx - 16, zy - hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, zx + hx - 16, zy + hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
         }
+        if (cst && boomOn) quad(&boomS, boomX, boomY - 36, 128, 72, 1, 0, 0, 1);
         if (cst) for (int i = 6; i >= 0; i--) { float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f); if (i) quad(&colB, sx, sy, 56, 56, 0, 0, 1, 1); else quad(&colH, sx - 8, sy - 4, 64, 64, 1, 0, 0, 1); }
         if (mst == 1 && (mtick / 8) % 2 == 0) { int fr = (frame / 8) & 3; quad(&alert, W - 70, my - 32, 64, 64, fr / 4.f, 0, (fr + 1) / 4.f, 1); }
         if (mst == 2) { int fr = (frame / 4) & 3; quad(&missile, mx, my - 16, 64, 32, fr / 4.f, 0, (fr + 1) / 4.f, 1); }
