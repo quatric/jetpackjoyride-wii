@@ -239,3 +239,9 @@ NUL-terminated text and 0-3 type-id bytes, e.g. `position` carries `f8 3c 00`). 
 roles: 0 aliases (`~default`), 1 component classes (74 distinct names across all screens), 3 events/triggers, 4 property names
 (135 in Pause), 5 and 7 unknown, 6 instance ids (251 in Pause). The component stream after the tables (`HCIU` records with tagged,
 unaligned property data) is still undecoded, so no positions, sizes or textures yet.
+
+`tools/uischema.py <assets>/xml/Components <Class>` prints the ordered property schema of a UI component class (base chain first,
+with type and default): `ComponentFPS` has `id, comment, isPickable, updateMask, ... scale, rotation, position, origin, dock ...`;
+`ComponentText` has 114 properties. All 91 `Component*.xml` definitions load. These types and defaults are what the component
+stream in a `.uiscreen` has to be decoded against; the stream's `0007aaa1 <n>` record numbers did not map directly onto these
+indices in a first try on `fpscounterscreen`, so the stream layout is still open.
