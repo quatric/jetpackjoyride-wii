@@ -154,3 +154,13 @@ pieces sit bottom-aligned) and the app strings them together in a fixed pseudo-r
 frame top at screen y -7 (Barry's feet land on the floor line). Transition chunks and the per-chunk `<object>` decorations
 (posters, cobwebs, vents, lights) are not placed yet. 30 of the 34 levels have foreground. Checked in Dolphin on the warehouse
 (crates, shelves, trusses) and forest (glass frames); the other levels were not looked at one by one.
+
+## Sound events: `xml/SoundFiles.xml` is the real table
+
+201 `<AudioPackage name=...>` entries map event groups to ogg names (`MECH_PACKAGE`: mech_step_1..4, mech_jump, mech_boost_*,
+mech_land; `HOG_PACKAGE`: bike_start, bike_engine_2, bike_jump, bike_land; `BIRD_PACKAGE`: bird_flap_1..3, bird_land,
+bird_vox_*; `VEHICLE_GENERIC_PACKAGE`: vehicle_form_*, mech_explode; `LASER_PACKAGE`, `MISSILE_PACKAGE`, `COIN_PACKAGE`, ...).
+The vehicle sounds now come from these packages (mount `vehicle_form_complete`/`bike_start`/`bird_vox_1`, jump `mech_jump`/
+`bike_jump`, flap `bird_flap_1`, destroyed `mech_explode`), so the earlier "no sound-event table" gap is closed for
+vehicles. Which package a game event plays is still decided in native code, so the mapping of events to packages is my own.
+The zapper has no package here and keeps its stand-in. Not listened to on a real console.
