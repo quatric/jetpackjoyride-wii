@@ -167,3 +167,7 @@ The zapper has no package here and keeps its stand-in. Not listened to on a real
 
 Also from the table now: jetpack loop/start/stop = `TRADITIONAL_JETPACK` (jetpack_plain_*), coin pickups cycle
 `COIN_PACKAGE` coin_pickup_1..3, Mech footsteps (`mech_step_1`) while running. Compiled and run in Dolphin without a crash, not listened to.
+
+Lasers and missiles use `LASER_PACKAGE` (laser_warning, laser_start when the beam goes live) and `MISSILE_PACKAGE`
+(missile_warning, missile_launch, rocket_explode_1 on impact; the missile now disappears when it hits). Run in Dolphin without
+a crash, not listened to.
