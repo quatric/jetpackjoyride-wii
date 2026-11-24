@@ -378,3 +378,6 @@ Seventh item, with the real `vehicleStart` icon (`PERK_START_IN_VEHICLE` in `per
 ### Shop: Gravity Belt and Dud Zappers
 
 Items 8 and 9, both with their real icons and both my own readings of `perks.xml`: **Gravity Belt** (value 0.22) lowers the vertical speed cap by 22
+### Shop: Gravity Belt and Dud Zappers
+
+Items 8 and 9, both with their real icons and both my own readings of `perks.xml`: **Gravity Belt** (value 0.22) lowers the vertical speed cap by 22 percent, for finer control; **Dud Zappers** (value 1) makes the first zapper of each run harmless. 450 and 500 coins (mine); `save.txt` bits 128 and 256. The shop is now table-driven (`shopName`, `shopDesc`, `shopPrice`, `shopOwn`), so another item is one row plus its effect. The fake-input build buys all nine from 6000 coins (1882 left after the first run, save ends with `511`); neither effect was isolated in a test.
