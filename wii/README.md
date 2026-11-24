@@ -164,3 +164,6 @@ The vehicle sounds now come from these packages (mount `vehicle_form_complete`/`
 `bike_jump`, flap `bird_flap_1`, destroyed `mech_explode`), so the earlier "no sound-event table" gap is closed for
 vehicles. Which package a game event plays is still decided in native code, so the mapping of events to packages is my own.
 The zapper has no package here and keeps its stand-in. Not listened to on a real console.
+
+Also from the table now: jetpack loop/start/stop = `TRADITIONAL_JETPACK` (jetpack_plain_*), coin pickups cycle
+`COIN_PACKAGE` coin_pickup_1..3, Mech footsteps (`mech_step_1`) while running. Compiled and run in Dolphin without a crash, not listened to.
