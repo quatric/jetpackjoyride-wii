@@ -364,3 +364,7 @@ The grace period after a vehicle is destroyed is now 42 frames: `settings.xml` `
 ### Shop: Coin Multiplier
 
 Sixth item, with the real `gem` icon: every coin counts double. `perks.xml` lists `PERK_COIN_MULTIPLIER` with value 5 but nothing says what the game does with it, so the effect is my own reading; 700 coins is mine too, and `save.txt` bit 32. The fake-input build buys all six from 3500 coins and the save ends with 500 coins and `63`; the doubling itself was not isolated in a test.
+
+### Boss health
+
+The Colossatron now has 3 health: while riding a vehicle, ramming its head costs it one (40 frames between hits) and the third defeats it for 100 coins; body segments, its boom and touching it on foot still hurt you. **This rule is my own.** In the fake-input test build (which cannot aim) the boss was never rammed, so kills stayed at 0 and the defeat path is unchecked; the same runs did log one boom hitting the player, so that hit path now is checked (a test-sequence slip of mine, a clashing key at tick 180, had made the title reopen the shop, fixed).
