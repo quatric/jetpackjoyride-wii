@@ -100,3 +100,7 @@ Head placement on vehicles is real data: `Characters/Vehicles/*/Vehicle*Data.xml
 offset from the frame centre, rotation and head-sheet frame. `tools/mkvhead.py out.h MechData.xml HogData.xml` bakes the
 default skin into `app/source/vhead.h` (rotation is not applied yet). Only vehicles have such files; Barry's own on-foot
 head offsets are still a guess.
+
+Vehicle sounds (stand-ins picked by name, not by the game's own event table): `mech_turkey_form_complete` /
+`santa_hog_form_complete` on mounting, `mech_yeti_jump` / `dullahan_bike_jump` on a hop. Copy them to the app folder as
+`mmount.ogg`, `hmount.ogg`, `mjump.ogg`, `hjump.ogg`. Played in Dolphin without a crash, but not listened to.

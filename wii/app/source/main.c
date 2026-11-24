@@ -276,8 +276,8 @@ int main(int argc, char **argv) {
     int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
-    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet};
-        for (int i = 0; i < 6; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } }
+    int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet, sVm[2], sVj[2]; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg", "mmount.ogg", "hmount.ogg", "mjump.ogg", "hjump.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet, &sVm[0], &sVm[1], &sVj[0], &sVj[1]};
+        for (int i = 0; i < 10; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } }
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
@@ -298,7 +298,7 @@ int main(int argc, char **argv) {
         }
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
           if (mech == 2) {
-              if (held && !wasHeld && y >= H - 121) { vy = -1.5f * VEH[vt].ib; bf = 20; }
+              if (held && !wasHeld && y >= H - 121) { vy = -1.5f * VEH[vt].ib; bf = 20; sfx_play(sVj[vt], 0); }
               vy += 1.5f * VEH[vt].g; if (held && bf > 0) { vy -= 1.5f * VEH[vt].b; bf--; } if (!held) bf = 0;
               if (vy > 12) vy = 12;
           } else {
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
         if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveHog; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
-            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; sfx_play(sCoin, 0); } }
+            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; } }
