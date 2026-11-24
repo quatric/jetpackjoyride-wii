@@ -10,7 +10,29 @@ import struct, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import uistrings
 PRE = {1: 5, 2: 5, 10: 5, 5: 5, 7: 5, 3: 7, 6: 7, 4: 7, 8: 8, 9: 8}   # words between the property name and its value
+TABB, PEB = b'\x00BAT\x02\x00\x00\x00\x02\x00\x00\x00', b'\xf1\xff\x07\x00'   # next entry header (TAB 2 2) or slot end
 HC, TAB, DE, PA, VE, V1, PE, MA, ESIU = 0x55494348, 0x54414200, 0x7dee1, 0x7aaa1, 0x7bbbe, 0x7bbb1, 0x7fff1, 0x5549414d, 0x55495345
+def value(b, k, e, t):
+    """Value of one slot entry spanning b[k:e] (after 'TAB 2 2 <name>'): links (DE -1 pairs / 0), then '0 <n> ...' values."""
+    W = lambda i: struct.unpack_from('<I', b, i)[0]; F = lambda i: struct.unpack_from('<f', b, i)[0]
+    while W(k) == DE: k += 8
+    if t == 1:   # bool: 0 <n> v v 0
+        assert W(k) == 0 and W(k + 4) == 1; return bool(W(k + 8))
+    while not (W(k) == 0 and W(k + 4) != 0 and W(k + 8) == 0 or t in (2, 10) and W(k) == 0 and W(k + 4) == 1): k += 4
+    nv = W(k + 4); k += 12 if W(k + 8) == 0 else 8
+    vs = []
+    for _ in range(nv):
+        if t in (2, 10): L = W(k); v = b[k+4:k+4+L].split(b'\0')[0].decode('latin1'); k += 4 + L
+        elif t in (3, 6): v = (F(k), F(k + 4), F(k + 8)); k += 12
+        elif t == 4: v = (F(k), F(k + 4)); k += 8
+        elif t == 5: v = F(k); k += 4
+        elif t == 7: v = W(k); k += 4
+        elif t == 8: v = tuple(F(k + 4 * i) for i in range(4)); k += 16
+        else: v = tuple(F(k + 4 * i) for i in range(4)); k += 16   # slot 9: rectangle (left, top, right, bottom)
+        vs.append(v); k += 4   # 1 = another keyframe follows, 0 = last
+        if k > e: raise ValueError('overrun')
+    return vs[0] if nv == 1 else vs
+
 def decode(b):
     g = uistrings.tables(b); names = lambda i: g[i] if len(g) > i else []
     classes = [t for t, _ in names(1)]; props = [t for t, _ in names(4)]; ids = [t for t, _ in names(6)]
@@ -34,22 +56,11 @@ def decode(b):
                 for _ in range(n):
                     assert W(k) == TAB and W(k + 4) == 2 and W(k + 8) == 2, hex(k)
                     nm = props[W(k + 12)] if W(k + 12) < len(props) else W(k + 12); k += 16
-                    k += 4 * PRE.get(t, 5)   # DE -1 links and the 0 1 0 marker: 5 words, 7 for vectors, 8 for colour
-                    if t in (1,): v = bool(W(k)); k += 4
-                    elif t in (2, 10):
-                        L = W(k); v = b[k+4:k+4+L].split(b'\0')[0].decode('latin1'); k += 4 + L
-                    elif t in (3, 6): v = (F(k), F(k + 4), F(k + 8)); k += 12
-                    elif t == 5: v = F(k); k += 4
-                    elif t == 8: v = tuple(F(k + 4 * i) for i in range(4)); k += 16
-                    else:   # slots 4 (vector2), 7 (int), 9 (5 words): read up to the next entry or slot end
-                        j = k; raw = []
-                        while W(j) not in (TAB, PE): raw.append(W(j)); j += 4
-                        if raw: raw.pop()   # trailing 0
-                        v = tuple(struct.unpack('<f', struct.pack('<I', x))[0] for x in raw) if t == 4 else tuple(raw)
-                        k = j - 4 if False else j - 4 + 4 * 0
-                        k = j; k -= 4
-                    if t in (1, 2, 3, 5, 6, 8, 10): k += 4   # trailing 0
-                    else: k += 4
+                    cand = [x for x in (b.find(TABB, k), b.find(PEB, k)) if x >= 0]   # strings are not 4-aligned: search bytes
+                    e = min(cand) if cand else len(b)
+                    try: v = value(b, k, e, t)
+                    except Exception: v = ('raw', [W(i) for i in range(k, e, 4)])
+                    k = e
                     c['props'][nm] = v
                     if W(k) == PE: pass
                 assert W(k) == PE, hex(k); k += 4
