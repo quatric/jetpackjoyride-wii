@@ -181,3 +181,9 @@ Teleporter (`Vehicles/Teleporter/vehicleTeleporter.xml`: 4x2 grid of 64 px frame
 sound `CFT_activate`): the fifth vehicle. It hovers; a press vanishes (invulnerable for about 0.4 s) and reappears at a random
 height. The real aiming reticle (`teleportreticle`) is not used, and the 24-frame timing is mine. Seen working in Dolphin.
 The AUTOTEST build cycles through all five vehicles by level.
+
+## Progress saving
+
+`save.txt` in the app folder holds the best distance and lifetime coins (`"%d %d"`), written at the end of each run and read at
+start; the title shows them. Checked in Dolphin: the file is created on the SD image with the run's values (read back from the
+image). The title text itself was not caught in a screenshot. No shop or upgrades use the coins yet.

@@ -282,6 +282,13 @@ static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; 
     {6, 42, 42, 252, 168, 0.60f, 0.0f, 0.0f, 0, 0, "gsuit.spr"},
     {4, 64, 64, 256, 128, 0, 0, 0, 0, 0, "tele.spr"} };   /* Teleporter: press = vanish and reappear at a random height; sheet is real, timings are mine */   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
 static const int vpick[5] = {6, 1, 13, 1, 1};
+static void loadSave(int *best, int *total) {   /* save.txt: best distance, lifetime coins */
+    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
+    int b = 0, t = 0; if (fscanf(f, "%d %d", &b, &t) == 2 && b >= 0 && t >= 0) { *best = b; *total = t; } fclose(f);
+}
+static void writeSave(int best, int total) {
+    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d\n", best, total); fclose(f);
+}
 static int mflip;   /* draw the next vehicle quad upside down (Gravity Suit on the ceiling) */
 static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h = drawn height; width keeps the frame's aspect */
     int c = (f - 1) % VEH[vt].cols, r = (f - 1) / VEH[vt].cols, fw = VEH[vt].fw, fh = VEH[vt].fh;
@@ -317,7 +324,8 @@ int main(int argc, char **argv) {
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     Spr mechS[5] = {{0}, {0}, {0}, {0}, {0}}; int haveV[5], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 5; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
-    float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    loadSave(&best, &total);
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
@@ -357,7 +365,7 @@ int main(int argc, char **argv) {
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
-        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; } }
+        if (dead) { if (--dead == 0) { state = 2; lastDist = (int)(scroll / 2); if (lastDist > best) best = lastDist; total += score; writeSave(best, total); } }
         else scroll += 4;
         frame++;
         dist = (int)(scroll / 2);   /* ~120 "distance" units per second */
@@ -449,6 +457,7 @@ int main(int argc, char **argv) {
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
                 if (state != 1) {
             char t[48];
+            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t); }
             drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
             if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
             if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
