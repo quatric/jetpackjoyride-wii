@@ -177,6 +177,35 @@ static void drawText(float x, float y, float sc, const char *t) {
     }
 }
 
+#define MAXL 4
+#define MAXT 8
+typedef struct { float speed, yoff, total; int n; Spr t[MAXT]; int w[MAXT], h[MAXT]; } Layer;
+static Layer layer[MAXL]; static int nlayer;
+
+static void loadLevel(void) {   /* level.txt from mklevel.py: S speed yoff n / T file w h; sets are back-to-front */
+    char pp[128], ln[128]; snprintf(pp, sizeof pp, "%slevel.txt", dir);
+    FILE *f = fopen(pp, "r"); if (!f) return;
+    Layer *L = NULL; int want = 0;
+    while (fgets(ln, sizeof ln, f)) {
+        if (ln[0] == 'S' && nlayer < MAXL) { L = &layer[nlayer++]; memset(L, 0, sizeof *L); sscanf(ln, "S %f %f %d", &L->speed, &L->yoff, &want); }
+        else if (ln[0] == 'T' && L && L->n < MAXT) {
+            char fn[32]; int w, h; if (sscanf(ln, "T %31s %d %d", fn, &w, &h) == 3 && loadSpr(&L->t[L->n], fn)) { L->w[L->n] = w; L->h[L->n] = h; L->total += w * 1.5f; L->n++; }
+        }
+    }
+    fclose(f);
+}
+
+static void drawLevel(float scroll) {   /* the game renders at 480x320; x1.5 fills 640x480 */
+    for (int i = 0; i < nlayer; i++) {
+        Layer *L = &layer[i]; if (!L->n || L->total <= 0) continue;
+        float x = -fmodf(scroll * L->speed, L->total); int k = 0;
+        for (int guard = 0; x < W && guard < 64; guard++, k = (k + 1) % L->n) {
+            float w = L->w[k] * 1.5f, h = L->h[k] * 1.5f;
+            quad(&L->t[k], x, 480 - h + 38 + L->yoff * 1.5f, w, h, 0, 0, 1, 1); x += w;
+        }
+    }
+}
+
 typedef struct { float minL, maxL, startAngle; int scaleTime, cw, rotT, on, off, withLasers, np, sd[8]; float w[8]; } ZPat;
 static ZPat zp[16]; static int nzp; static float zGlobalP = 80; static int zGlobalSd;
 
@@ -223,8 +252,7 @@ int main(int argc, char **argv) {
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
     loadMissile(); loadZappers(); loadFont();
-    Spr bg[4]; int haveBg = 1; memset(bg, 0, sizeof bg);   /* warehouse props, tiles 1..4 of warehouseBG1, scrolled as parallax */
-    for (int i = 0; i < 4; i++) { char nm[24]; snprintf(nm, sizeof nm, "bg%d.spr", i); if (!loadSpr(&bg[i], nm)) haveBg = 0; }
+    loadLevel();
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
     Spr bBody = {0}, bHead = {0}; int haveRig = loadSpr(&bBody, "body.spr") && loadSpr(&bHead, "head.spr");   /* 4x8 grids of 32x32 frames */
     int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet};
@@ -291,10 +319,7 @@ int main(int argc, char **argv) {
           if (thrust && !sfx_playing(jetV)) jetV = sfx_play(sJet, 1); else if (!thrust && jetV > 0) { sfx_stop(jetV); jetV = -1; } }
         render:
         GX_InvVtxCache(); GX_InvalidateTexAll();
-        if (haveBg) {
-            float bx = scroll * 0.6f; int t0 = (int)(bx / 384); float off = bx - t0 * 384;
-            for (int k = 0; k < 3; k++) quad(&bg[(t0 + k) & 3], k * 384 - off, 134, 384, 384, 0, 0, 1, 1);
-        }
+        drawLevel(scroll);
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
             if (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90) { cgot[i] = 1; score++; sfx_play(sCoin, 0); continue; }
