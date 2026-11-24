@@ -98,7 +98,7 @@ the crate picks one of the two at random. Its fire/mount animations are not used
 
 Head placement on vehicles is real data: `Characters/Vehicles/*/Vehicle*Data.xml` lists, per vehicle frame, the head's
 offset from the frame centre, rotation and head-sheet frame. `tools/mkvhead.py out.h MechData.xml HogData.xml` bakes the
-default skin into `app/source/vhead.h` (rotation is not applied yet). Only vehicles have such files; Barry's own on-foot
+default skin into `app/source/vhead.h` (rotation is applied; its sign convention and the Mech's dive frames are not verified by eye). Only vehicles have such files; Barry's own on-foot
 head offsets are still a guess.
 
 Vehicle sounds (stand-ins picked by name, not by the game's own event table): `mech_turkey_form_complete` /

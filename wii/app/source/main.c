@@ -56,15 +56,17 @@ static void fallbackSpr(Spr *s) {   /* magenta 4x4 so a missing asset is visible
     DCFlushRange(d, 64); s->data = d; s->w = s->h = 4; GX_InitTexObj(&s->obj, d, 4, 4, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 }
 
-static void quadRot(Spr *s, float cx, float cy, float w, float h, float deg) {   /* quad centred on (cx,cy), rotated */
+static void quadRotUV(Spr *s, float cx, float cy, float w, float h, float deg, float u0, float v0, float u1, float v1) {   /* quad centred on (cx,cy), rotated */
     Mtx r, t, m; guMtxRotDeg(r, 'z', deg); guMtxTrans(t, cx, cy, 0); guMtxConcat(t, r, m); GX_LoadPosMtxImm(m, GX_PNMTX0);
     GX_LoadTexObj(&s->obj, GX_TEXMAP0);
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2f32(-w / 2, -h / 2); GX_TexCoord2f32(0, 0); GX_Position2f32(w / 2, -h / 2); GX_TexCoord2f32(1, 0);
-    GX_Position2f32(w / 2, h / 2); GX_TexCoord2f32(1, 1); GX_Position2f32(-w / 2, h / 2); GX_TexCoord2f32(0, 1);
+    GX_Position2f32(-w / 2, -h / 2); GX_TexCoord2f32(u0, v0); GX_Position2f32(w / 2, -h / 2); GX_TexCoord2f32(u1, v0);
+    GX_Position2f32(w / 2, h / 2); GX_TexCoord2f32(u1, v1); GX_Position2f32(-w / 2, h / 2); GX_TexCoord2f32(u0, v1);
     GX_End();
     guMtxIdentity(m); GX_LoadPosMtxImm(m, GX_PNMTX0);
 }
+
+static void quadRot(Spr *s, float cx, float cy, float w, float h, float deg) { quadRotUV(s, cx, cy, w, h, deg, 0, 0, 1, 1); }
 
 static void quad(Spr *s, float x, float y, float w, float h, float u0, float v0, float u1, float v1) {
     GX_LoadTexObj(&s->obj, GX_TEXMAP0);
@@ -315,7 +317,7 @@ int main(int argc, char **argv) {
         y += vy; if (inv) inv--;
         if (!mech && mpick < -900 && !dead && (int)(scroll / 2) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; int ok[3]; for (int i = 0; i < 3; i++) if (haveV[i]) ok[nV++] = i; if (nV) vt = ok[rand() % nV]; else mpick = -999; }
 #ifdef AUTOTEST
-        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[2] ? 2 : haveV[1]; }   /* test build: start on the Mech */
+        if (!mech && (int)(scroll / 2) == 100) { mech = 2; vt = haveV[lvl % 3] ? lvl % 3 : 0; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = 900; }
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; sfx_play(sVm[vt], 0); } }
@@ -393,8 +395,8 @@ int main(int argc, char **argv) {
             else f = g ? mechDrive[(frame / 2) % 14] : held && bf > 0 ? 13 + ((frame / 4) & 1) : vy < 0 ? 12 : 16;
             float sz = vt == 1 ? 130 : vt == 2 ? 110 : 150, k = sz / VEH[vt].fh, w = sz * VEH[vt].fw / VEH[vt].fh; mechQuad(&mechS[vt], vt, 20, y + 100, sz, f);
             if (haveRig) {   /* head placement from Vehicle*Data.xml (offset from frame centre; rotation ignored) */
-                const signed char *h = vt == 2 ? VHEAD2[f] : vt ? VHEAD1[f] : VHEAD0[f]; int c = (h[2] - 1) % 4, r = (h[2] - 1) / 4; float hs = 32 * k;
-                quad(&bHead, 20 + w / 2 + h[0] * k - hs / 2, y + 100 - sz / 2 + h[1] * k - hs / 2, hs, hs, c / 4.f, r / 8.f, (c + 1) / 4.f, (r + 1) / 8.f);
+                const short *h = vt == 2 ? VHEAD2[f] : vt ? VHEAD1[f] : VHEAD0[f]; int c = (h[2] - 1) % 4, r = (h[2] - 1) / 4; float hs = 32 * k;
+                quadRotUV(&bHead, 20 + w / 2 + h[0] * k, y + 100 - sz / 2 + h[1] * k, hs, hs, (float)h[3], c / 4.f, r / 8.f, (c + 1) / 4.f, (r + 1) / 8.f);
             }
         } else if (inv && (frame / 3) & 1) { } else
         if (haveRig) {   /* the game's own default costume: row 0 run, 1 thrust, 2 fall */
