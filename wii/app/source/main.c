@@ -185,11 +185,17 @@ static void drawText(float x, float y, float sc, const char *t) {
 typedef struct { float speed, yoff, total; int n; Spr t[MAXT]; int w[MAXT], h[MAXT]; } Layer;
 static Layer layer[MAXL]; static int nlayer;
 
+/* foreground chunks (F lines): slices of the level's FG textures, strung together in a fixed pseudo-random order */
+#define MAXF 16
+static struct { Spr s; int w, h, prob; float top; } fgc[MAXF]; static int nfg; static unsigned char fgseq[128]; static float fgTotal;
+
 static int nLevels = 1;
 
 static void freeLevel(void) {
     for (int i = 0; i < nlayer; i++) for (int k = 0; k < layer[i].n; k++) { free(layer[i].t[k].data); layer[i].t[k].data = NULL; }
     nlayer = 0;
+    for (int i = 0; i < nfg; i++) { free(fgc[i].s.data); fgc[i].s.data = NULL; }
+    nfg = 0; fgTotal = 0;
 }
 
 static void loadLevel(int idx) {   /* levels/<idx>/level.txt from mklevel.py: S speed yoff n / T file w h; sets are back-to-front */
@@ -199,11 +205,20 @@ static void loadLevel(int idx) {   /* levels/<idx>/level.txt from mklevel.py: S 
     Layer *L = NULL; int want = 0;
     while (fgets(ln, sizeof ln, f)) {
         if (ln[0] == 'S' && nlayer < MAXL) { L = &layer[nlayer++]; memset(L, 0, sizeof *L); sscanf(ln, "S %f %f %d", &L->speed, &L->yoff, &want); }
+        else if (ln[0] == 'F' && nfg < MAXF) {
+            char fn[32], full[80]; int w, h, pr; float top;
+            if (sscanf(ln, "F %31s %d %d %f %d", fn, &w, &h, &top, &pr) == 5 && (snprintf(full, sizeof full, "levels/%d/%s", idx, fn), loadSpr(&fgc[nfg].s, full))) { fgc[nfg].w = w; fgc[nfg].h = h; fgc[nfg].top = top; fgc[nfg].prob = pr; nfg++; }
+        }
         else if (ln[0] == 'T' && L && L->n < MAXT) {
             char fn[32], full[80]; int w, h; if (sscanf(ln, "T %31s %d %d", fn, &w, &h) == 3 && (snprintf(full, sizeof full, "levels/%d/%s", idx, fn), loadSpr(&L->t[L->n], full))) { L->w[L->n] = w; L->h[L->n] = h; L->total += w * 1.5f; L->n++; }
         }
     }
     fclose(f);
+    if (nfg) {
+        int tot = 0; for (int i = 0; i < nfg; i++) tot += fgc[i].prob > 0 ? fgc[i].prob : 1;
+        unsigned r = 12345 + idx;
+        for (int k = 0; k < 128; k++) { r = r * 1103515245u + 12345u; int v = (r >> 8) % tot, i = 0; while (i < nfg - 1 && (v -= fgc[i].prob > 0 ? fgc[i].prob : 1) >= 0) i++; fgseq[k] = i; fgTotal += fgc[i].w * 1.5f; }
+    }
 }
 
 static void drawLevel(float scroll) {   /* the game renders at 480x320; x1.5 fills 640x480 */
@@ -213,6 +228,14 @@ static void drawLevel(float scroll) {   /* the game renders at 480x320; x1.5 fil
         for (int guard = 0; x < W && guard < 64; guard++, k = (k + 1) % L->n) {
             float w = L->w[k] * 1.5f, h = L->h[k] * 1.5f;
             quad(&L->t[k], x, 480 - h + 38 + L->yoff * 1.5f, w, h, 0, 0, 1, 1); x += w;
+        }
+    }
+    if (nfg && fgTotal > 0) {   /* the foreground (floor, crates, ceiling) moves at the full scroll speed; the game's y-up frame is 512 tall */
+        float x = -fmodf(scroll, fgTotal);
+        for (int k = 0; x < W && k < 128; k++) {
+            int i = fgseq[k]; float w = fgc[i].w * 1.5f, h = fgc[i].h * 1.5f;
+            if (x + w > 0) quad(&fgc[i].s, x, fgc[i].top * 1.5f - 7, w, h, 0, 0, (float)fgc[i].w / ((fgc[i].w + 7) / 8 * 8), (float)fgc[i].h / ((fgc[i].h + 7) / 8 * 8));
+            x += w;
         }
     }
 }

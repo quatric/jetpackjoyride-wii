@@ -144,3 +144,13 @@ PLUS pauses and resumes during a run. The AUTOTEST build fakes PLUS at ticks 300
 component classes (Window, Button, Quad, Text, Texture, TableLayout, Swipie, ...), data bindings (`this.score`,
 `this.missionText`, `this.buttonCashIn`) and trigger names (`PopUpOpen`, `onScreen`, `offScreen`, `close`). Positions, sizes and
 texture references live in the tagged stream after the table, still undecoded.
+
+## Level foreground (chunks)
+
+`LevelFiles/*.xml` also list `<chunk>` elements: slices `[u0,u1)` of the level's `*FG_n.tex` textures (the floor, crates, shelves,
+ceiling trusses; glass frames in the forest) with a `probability`, an optional `yOffset` and transition flags. `mklevel.py` now
+exports them as `F file w h top prob` (CMPR strips; `top = 256 - yOffset - h/2` in the game's 512-high y-up frame, so 256-high
+pieces sit bottom-aligned) and the app strings them together in a fixed pseudo-random order at full scroll speed, x1.5,
+frame top at screen y -7 (Barry's feet land on the floor line). Transition chunks and the per-chunk `<object>` decorations
+(posters, cobwebs, vents, lights) are not placed yet. 30 of the 34 levels have foreground. Checked in Dolphin on the warehouse
+(crates, shelves, trusses) and forest (glass frames); the other levels were not looked at one by one.
