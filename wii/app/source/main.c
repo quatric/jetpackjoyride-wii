@@ -134,6 +134,31 @@ static void loadMissile(void) {
     fclose(f);
 }
 
+typedef struct { short x, y, w, h, xo, yo, xa; } Glyph;
+static Glyph glyph[128]; static Spr fontSpr; static int haveFont;
+
+static void loadFont(void) {   /* BMFont text .fnt + font.spr (the game's vehicle_font) */
+    if (!loadSpr(&fontSpr, "font.spr")) return;
+    char pp[128], ln[256]; snprintf(pp, sizeof pp, "%sfont.fnt", dir);
+    FILE *f = fopen(pp, "r"); if (!f) return;
+    while (fgets(ln, sizeof ln, f)) {
+        int id, x, y, w, h, xo, yo, xa;
+        if (sscanf(ln, "char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d", &id, &x, &y, &w, &h, &xo, &yo, &xa) == 8 && id >= 0 && id < 128)
+            glyph[id] = (Glyph){x, y, w, h, xo, yo, xa};
+    }
+    fclose(f); haveFont = 1;
+}
+
+static void drawText(float x, float y, float sc, const char *t) {
+    if (!haveFont) return;
+    for (; *t; t++) {
+        int c = *t; if (c >= 'a' && c <= 'z') c -= 32;
+        Glyph *g = &glyph[c & 127];
+        if (g->w) quad(&fontSpr, x + g->xo * sc, y + g->yo * sc, g->w * sc, g->h * sc, g->x / 256.f, g->y / 256.f, (g->x + g->w) / 256.f, (g->y + g->h) / 256.f);
+        x += g->xa * sc;
+    }
+}
+
 typedef struct { float minL, maxL, startAngle; int scaleTime, cw, rotT, on, off, withLasers, np, sd[8]; float w[8]; } ZPat;
 static ZPat zp[16]; static int nzp; static float zGlobalP = 80; static int zGlobalSd;
 
@@ -179,7 +204,7 @@ int main(int argc, char **argv) {
     { char mp[160]; snprintf(mp, sizeof mp, "%smusic.ogg", dir); audio_start(mp); }
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
-    loadMissile(); loadZappers();
+    loadMissile(); loadZappers(); loadFont();
     int sCoin, sHurt, sLaserW, sMissW, sMissL, sJet; { char pp[160]; const char *n[] = {"coin.ogg", "hurt.ogg", "laserw.ogg", "missw.ogg", "missl.ogg", "jet.ogg"}; int *o[] = {&sCoin, &sHurt, &sLaserW, &sMissW, &sMissL, &sJet};
         for (int i = 0; i < 6; i++) { snprintf(pp, sizeof pp, "%s%s", dir, n[i]); *o[i] = sfx_load(pp); } }
     int jetV = -1, prevCur = -1, prevMst = 0;
@@ -260,6 +285,7 @@ int main(int argc, char **argv) {
             quad(&emit, W - 64, ly - 42, 64, 85, 64.f / 64, 0, 0, 85.f / 88);
         }
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
+                { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
     audio_stop(); INPUT_Shutdown(); return 0;
