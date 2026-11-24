@@ -334,16 +334,21 @@ int main(int argc, char **argv) {
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
+    Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0;   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total);
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
         if (btnDown() & WPAD_BUTTON_HOME) break;
-        if (state == 1 && (btnDown() & WPAD_BUTTON_PLUS)) paused ^= 1;
+        if (state == 1 && (btnDown() & WPAD_BUTTON_PLUS)) { paused ^= 1; psel = 2; }
+        if (paused && state == 1 && havePause) {
+            u32 bd = btnDown(); if ((bd & WPAD_BUTTON_LEFT) && psel > 0) psel--; if ((bd & WPAD_BUTTON_RIGHT) && psel < 2) psel++;
+            if (bd & (WPAD_BUTTON_A | WPAD_BUTTON_2)) { if (psel == 2) paused = 0; else if (psel == 1) { paused = 0; state = 2; doRestart = 1; } else { paused = 0; state = 0; } }
+        }
         if (paused && state == 1) { dist = (int)(scroll / 2); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
         if (state != 1) { paused = 0;
-            if (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) { y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
+            if (doRestart || (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = 600; state = 1; if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
@@ -496,7 +501,15 @@ int main(int argc, char **argv) {
             if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); }
             if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
         }
-        if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
+        if (paused && havePause) {
+            static const char *const lab[3] = {"QUIT", "RETRY", "RESUME"};
+            for (int i = 0; i < 3; i++) {
+                float cx = W / 2 + (i - 1) * 150, cy = 240, bs = i == psel ? 140 : 130;
+                quad(&pbk, cx - bs / 2, cy - bs / 2, bs, bs, 0, 0, 1, 1); quad(&pic[i], cx - 38, cy - 38 - 12, 77, 77, 0, 0, 1, 1);
+                drawText(cx - strlen(lab[i]) * 10.5f, cy + 24, 0.6f, lab[i]);
+            }
+            drawText(W / 2 - 110, 130, 1.2f, "PAUSED");
+        } else if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
         { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); snprintf(hud, sizeof hud, "LEVEL %d/%d", lvl + 1, nLevels); drawText(20, 78, 0.5f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
