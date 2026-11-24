@@ -10,7 +10,7 @@ reuses the original game's assets (v1.104.2, `assets/assets.zip` inside
 | ext | status |
 |-----|--------|
 | `.tex` | Header `TEX\1`; raw packed pixels, no mips. 4444 / 5551 / 888 / 8888 decoded by `tools/tex2png.py` (4651 of 5323). Files with flag `6` (672, e.g. `textures/RewardSystem/HUD`) use an unidentified 1.5 byte/px block format (8-byte blocks, DXT1-like but not plain DXT1). |
-| `.atlas` | `TextureAtlasTool v1.1.3.03`. **Not encrypted** (the loader, `Mortar::TextureAtlas::Load` / `SerializedTextureAtlasHeader::Read`, only uses `DataStreamReader::ReadBasicType`; no AES/LZW on this path). Layout: u32 magic `0xfe000003`, len-prefixed tool string, u32 fields (page w/h, ..., record count), then hash-keyed records. Sprite names are stored as 16-byte hashes (`TextureAtlasRecHashBuilder`), not MD5/SHA1/SHA256 of the asset paths (tested), so the exact hash function and record field order still need decompiling (`Mortar::Read(DataStreamReader&, TextureAtlasRec&)` at file offset 0x1684998 in arm64 `libmortargame.so`). |
+| `.atlas` | Plain binary, magic `0xfe000003` (parsed by `tools/atlas.py`, sliced by `tools/atlas_extract.py`). Sprites are keyed by `FileStringHash` (`tools/hashname.py`: Jenkins lookup2, init `0x805`, path lowercased, `\\`→`/`) of the original sprite `.tex` path. Those source `.tex` files are not shipped, so names are recovered from path strings in the assets and `libmortargame.so`: 1520 of 2600 sprites named so far, the rest saved as `unknown/<hash>`. `SpineAnimation/*.atlas` are libgdx text atlases (skipped). |
 | `.uiscreen` | Chunked binary (`FSIU`/`BSIU`/`TSIU`), screen components. |
 | `.json`, `.lua`, `.xml`, `.ogg`, `.ttf`, `.vs/.fs` | plain; shaders are GLES and must be replaced by GX TEV setups. |
 
