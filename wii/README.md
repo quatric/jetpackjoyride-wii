@@ -272,3 +272,7 @@ Eighth vehicle (`ecto.spr` from `Ecto/Ecto/ecto.png`): the sheet is one static 2
 ### DeLorean
 
 Ninth vehicle (`dlr.spr` from `delorean/delorean.png`): one static 157x62 frame, no rider; the glow and tube layers are not drawn. Hog physics, a guess. Checked in Dolphin.
+
+### Starship
+
+Tenth vehicle (`ship.spr` from `starship/starship.png`): one static 232x98 frame, no rider; glow, jet and speed-table layers are not drawn. Hog physics, a guess. Checked in Dolphin.
