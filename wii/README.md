@@ -412,7 +412,7 @@ The game-over text is now drawn over the real `menus/popupBacking` panel from th
 
 ## Real text
 
-`tools/strtab.py` decodes the APK's `.str` string tables (`translations_header.str` holds the keys, `translations_<Language>.str` the text; the last word of each header record is the index of its text). The shop now uses the game's real gadget names (`PERK_*_NAME`), e.g. Gemology, Missile Jammer, Dezapinator, Flash. The short descriptions are still mine. Two shop items, Vehicle Magnet and Token Magnet, are my inventions and have no real counterpart. The real list also has Flying Pig and Nerd Repellent, which are not built.
+`tools/strtab.py` decodes the APK's `.str` string tables (`translations_header.str` holds the keys, `translations_<Language>.str` the text; the last word of each header record is the index of its text). The shop now uses the game's real gadget names (`PERK_*_NAME`), e.g. Gemology, Missile Jammer, Dezapinator, Flash. The short descriptions are still mine. Vehicle Magnet is my invention and has no real counterpart. (An earlier note here also called Token Magnet an invention; that was wrong: `perks.xml` lists `PERK_TOKEN_MAGNET`, "Magnetic Tokens", and the shop now uses that name and its real description.)
 
 The shop now shows the game's real gadget descriptions (`tools/mkgadgets.py` writes `gadgets.txt` from the string tables; the app word-wraps them). The font has no punctuation glyphs, so commas, periods and hyphens do not draw. The real descriptions describe the real gadgets; what each gadget does in this port is still my own reading, so some will not match their text.
 
@@ -426,3 +426,12 @@ The shop now shows the game's real gadget descriptions (`tools/mkgadgets.py` wri
 - Game over ignores buttons for the first 45 frames, so a mashed jetpack button does not skip it.
 - Free Ride only picks a vehicle whose art loaded.
 - Game-over panel re-spaced so the title no longer touches the distance row.
+
+## Flying Pig and Air Barrys
+
+Two more of the game's real gadgets are in the shop, with their real names, icons (`ItemIcons/gadgets/flyingPig.png`, `airBarrys.png`) and descriptions:
+
+- Flying Pig: a golden pig (the real `Entities/distanceMarkerPig` sheet, its two flying rows) crosses the screen about every 20-30 seconds; touching it pays 30 coins. How often it comes and what it pays are mine. In the test build it spawned 4 times and was collected 3 times in one run.
+- Air Barrys: pressing the jetpack while standing gives a kick off the floor. `perks.xml` has no number for it; the strength is mine. Not exercised by the test build.
+
+Nerd Repellent is still not built: it removes the lab's scientists, and this port has none. The scientists are assembled from a body-parts atlas (`Characters/workers0`) whose layout lives in native code.
