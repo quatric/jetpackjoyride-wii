@@ -11,6 +11,7 @@
 #include "input_wii.h"
 #include "wiiupdate.h"
 #include "audio.h"
+#include <asndlib.h>
 #include "vhead.h"
 
 #define W 640
@@ -475,7 +476,8 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
-    Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");   /* title art: textures/logo/default (downscaled to fit) */
+    Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");
+    Spr titleS = {0}; int haveTitle = loadSpr(&titleS, "title.spr");   /* the lab room behind the title (Room0/bgTitle) */   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr popS = {0}; int havePop = loadSpr(&popS, "popup.spr");   /* menus/popupBacking behind the game-over text */
@@ -506,7 +508,7 @@ int main(int argc, char **argv) {
         int dist = 0;
         { int mi = inShop && state == 0 ? 1 : state != 1 ? 0 : cst ? 3 : (mech == 2 && vt == 1) ? 2 : 0; static int lastMi = 0; if (mi != lastMi) { lastMi = mi; audio_switch(musicPath[mi]);
 #ifdef AUTOTEST
- { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "music %d tick %d\n", mi, tick); fclose(df); } }
+ { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { { extern volatile int audioFed, audioRestarts; fprintf(df, "music %d tick %d fed %d restarts %d voice0 %d\n", mi, tick, audioFed, audioRestarts, ASND_StatusVoice(0)); } fclose(df); } }
 #endif
  } }
         if (btnDown() & WPAD_BUTTON_HOME) break;
@@ -737,8 +739,8 @@ int main(int argc, char **argv) {
             wasAir = air; } }
         render:
         GX_InvVtxCache(); GX_InvalidateTexAll();
-        drawLevel(scroll);
-        if (haveAlarm) eachAlarm(scroll, drawAlarmCb, &frame);
+        if (state == 0 && haveTitle) quad(&titleS, 0, 0, W, H, 0, 0, 1, 1); else drawLevel(scroll);
+        if (haveAlarm && !(state == 0 && haveTitle)) eachAlarm(scroll, drawAlarmCb, &frame);
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
             if ((gDog && cy[i] > H - 170 && px < 140 && px + 16 > 20) || (gMagnet && hypotf(px + 8 - 95, cy[i] + 8 - (y + 45)) < 130) || (gVMag && mech == 2 && hypotf(px + 8 - 95, cy[i] + 8 - (y + 50)) < 190) || (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90)) { cgot[i] = 1; score += gMul ? 2 : 1; sfx_play(rand() % 3 == 0 ? sC2 : rand() & 1 ? sC3 : sCoin, 0); continue; }
@@ -814,8 +816,8 @@ int main(int argc, char **argv) {
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
                 if (state != 1) {
             char t[48];
-            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t);
-                if (nmis && !inShop) { snprintf(t, sizeof t, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(W / 2 - 170, 268, 0.5f, t); } }
+            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 424, 0.6f, t);
+                if (nmis && !inShop) { snprintf(t, sizeof t, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(W / 2 - 170, 448, 0.45f, t); } }
             int spinning = state == 2 && (spinsLeft || spinAnim || spinShow);
             if (state == 2 && havePop) quad(&popS, 70, 100, 500, 250, 0, 0, 1, 1);
             if (state == 0 && haveLogo) {
@@ -837,10 +839,10 @@ int main(int argc, char **argv) {
                 if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 360, 0.9f, "NEW BEST!");
             }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
-                float cx = W / 2, cy = 320, bw = 332 * 0.75f, bh = 96 * 0.75f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.75f - 24, cy - 48, 48, 96, 0, 0, 1, 1);
+                float cx = W / 2, cy = 300, bw = 332 * 0.75f, bh = 96 * 0.75f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.75f - 24, cy - 48, 48, 96, 0, 0, 1, 1);
                 drawText(cx + 38 * 0.75f - 55, cy - 16, 0.9f, "START");
                 if (haveMag) {
-                    float sy = 400, sw = 260 * 0.6f, sh = 80 * 0.6f; if (tsel == 1) { sw += 8; sh += 6; } quad(&pbk, cx - sw / 2, sy - sh / 2, sw, sh, 0, 0, 1, 1); drawText(cx - 28, sy - 12, 0.7f, "SHOP");
+                    float sy = 370, sw = 260 * 0.6f, sh = 80 * 0.6f; if (tsel == 1) { sw += 8; sh += 6; } quad(&pbk, cx - sw / 2, sy - sh / 2, sw, sh, 0, 0, 1, 1); drawText(cx - 28, sy - 12, 0.7f, "SHOP");
                     if (inShop) {
                         quad(&pbk, 120, 150, 400, 250, 0, 0, 1, 1); quad(&shopS[shopI], 140, 200, 80, 80, 0, 0, 1, 1);
                         drawText(240, 180, 0.8f, shopName[shopI]); if (gadTxt[shopI][0]) drawWrapped(240, 212, 0.45f, 18, 31, gadTxt[shopI]); else drawText(240, 220, 0.6f, shopDesc[shopI]);

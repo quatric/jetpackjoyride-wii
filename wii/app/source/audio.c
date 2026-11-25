@@ -10,10 +10,11 @@
 
 #define FRAMES 4096
 #define BYTES (FRAMES * 4)
-static s16 *buf[2];
+static s16 *buf[3];   /* one playing, one queued, one being decoded */
 static lwp_t th;
 static volatile int stop, gen;   /* gen changes when audio_switch picks another file */
 static char path[160];
+volatile int audioFed, audioRestarts;   /* debug counters for the test build */
 
 static long fill(OggVorbis_File *vf, s16 *b) {   /* returns bytes decoded, looping at EOF */
     long got = 0; int bs;
@@ -36,9 +37,15 @@ static void *run(void *arg) {
         int cur = 0; long n = fill(&vf, buf[0]); if (n <= 0) { ov_clear(&vf); while (!stop && g == gen) usleep(20000); continue; }
         DCFlushRange(buf[0], n); ASND_SetVoice(0, fmt, rate, 0, buf[0], n, 200, 200, NULL);
         while (!stop && g == gen) {
-            cur ^= 1; n = fill(&vf, buf[cur]); if (n <= 0) break;
+            cur = (cur + 1) % 3; n = fill(&vf, buf[cur]); if (n <= 0) break;
             DCFlushRange(buf[cur], n);
-            while (!stop && g == gen && ASND_AddVoice(0, buf[cur], n) == SND_BUSY) usleep(2000);
+            /* AddVoice says SND_INVALID (not BUSY) while the last SetVoice is still pending, so only an
+               unused voice (an underrun) means start over; anything else is retried */
+            while (!stop && g == gen) {
+                if (ASND_AddVoice(0, buf[cur], n) == SND_OK) { audioFed++; break; }
+                if (ASND_StatusVoice(0) == SND_UNUSED) { ASND_SetVoice(0, fmt, rate, 0, buf[cur], n, 200, 200, NULL); audioRestarts++; break; }
+                usleep(2000);
+            }
         }
         ASND_StopVoice(0);
         ov_clear(&vf);
@@ -49,8 +56,8 @@ static void *run(void *arg) {
 void audio_start(const char *file) {
     snprintf(path, sizeof path, "%s", file);
     ASND_Init(); ASND_Pause(0);
-    buf[0] = memalign(32, BYTES); buf[1] = memalign(32, BYTES);
-    if (buf[0] && buf[1]) LWP_CreateThread(&th, run, NULL, NULL, 16 * 1024, 64);
+    for (int i = 0; i < 3; i++) if (!(buf[i] = memalign(32, BYTES))) return;
+    LWP_CreateThread(&th, run, NULL, NULL, 64 * 1024, 64);   /* Tremor wants a deep stack */
 }
 
 void audio_switch(const char *file) {   /* swap tracks; the thread notices at its next buffer */

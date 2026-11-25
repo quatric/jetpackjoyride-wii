@@ -47,7 +47,7 @@ SD layout (`sd:/apps/jetpackjoyride/`): `boot.dol`, `barry.spr`, `coin.spr`, `be
     python3 -I wii/tools/mkspr.py jj_sprites/missileAlert.png alert.spr 0 0 256 64
     python3 -I wii/tools/mkzappers.py <assets>/xml/ObstaclePatterns.xml zappers.txt
     python3 -I wii/tools/mkspr.py jj_sprites/electricbolt.png bolt.spr
-    python3 -I wii/tools/mklevels.py <assets>/xml/LevelFiles jj_sprites levels   # converts every fully resolvable level (34), writes count.txt
+    python3 -I wii/tools/mklevels.py <assets>/xml/LevelFiles jj_sprites levels   # converts the 11 levels of the regular rotation, writes count.txt
     python3 -I wii/tools/mkspr.py jj_sprites/textures/effects/jetpack/standardflame.png flame.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultBody.png body.spr
     python3 -I wii/tools/mkspr.py jj_png/textures/Characters/Barry/defaultHead.png head.spr
@@ -494,3 +494,17 @@ The bomb consumable (the game's "Final Blast", shop icon `ItemIcons/bomb.png`) i
 The on-foot test build now sends a missile at every chance, so the missile near-miss path runs too: a run logged one missile near miss.
 
 Results panel: the decoded `ResultsScreen_New` overview lists distance, what was collected (coins and tokens), equipment and "assists" (gadgets). The game-over panel now shows the run's tokens next to its coins and the number of gadgets used beside the total. The leaderboards, rewards and social parts of that screen are still not ported.
+
+## Level rotation, title room, music fix
+
+- Levels: of the 34 resolvable level files, only the regular rotation is built now (`Room1` and its City/Forest/Volcano/
+  Warehouse window variants, warehouse, cave, caveVolcano, forest, hills, sewer; list in `tools/mklevels.py`). The licensed and
+  seasonal event stages and the `TV` duplicates build their backdrops from atlas fragments, which the strip-layer model drew
+  as scattered pieces. All 11 were cycled through in Dolphin and render whole.
+- Title: drawn over the lab room it sits in in the real game (`bgTitle` atlas, top-left 672x512 minus its dark margin,
+  stored as `title.spr`) instead of the first level, with the logo, START and SHOP over it and best/rank below the floor.
+- Music: `ASND_AddVoice` answers `SND_INVALID` (not `SND_BUSY`) while the previous `ASND_SetVoice` is still pending; the
+  stream loop took that as success, so it decoded far ahead of playback and overwrote the buffer being played, leaving the
+  voice silent. It now keeps three buffers (playing, queued, decoding), retries until the add succeeds and only restarts the
+  voice on a real underrun; the thread stack went from 16 to 64 KB for Tremor. Checked in Dolphin: 157 buffers queued over
+  about 14 s of play (14.6 s of audio), no restarts.

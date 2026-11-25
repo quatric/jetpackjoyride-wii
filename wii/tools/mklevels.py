@@ -6,10 +6,14 @@ sys.path.insert(0, os.path.dirname(__file__))
 import bxml
 d, sprites, out = sys.argv[1:4]
 low = {k.lower() for k in json.load(open(os.path.join(sprites, 'manifest.json'))) if not k.startswith('unknown')}
+# The regular rotation. The rest are licensed or seasonal event stages (and 'TV' duplicates) whose
+# backgrounds are assembled from atlas fragments, which this simple strip-layer model draws as scattered bits.
+KEEP = {'Room1', 'Room1City', 'Room1Forest', 'Room1Volcano', 'Room1Warehouse', 'warehouse', 'cave', 'caveVolcano', 'forest', 'hills', 'sewer'}
 n = 0; names = []
 for f in sorted(os.listdir(d)):
     p = os.path.join(d, f)
     if not os.path.isfile(p): continue
+    if f[:-4] not in KEEP: continue
     try: root = bxml.parse(open(p, 'rb').read())[0]
     except Exception: continue
     tiles = []

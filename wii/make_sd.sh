@@ -37,6 +37,7 @@ Image.open(d + '/logo_text.png').convert('RGBA').resize((360, 218), Image.LANCZO
 Image.open(d + '/logo_barry.png').convert('RGBA').resize((192, 270), Image.LANCZOS).save(t + '/b.png')
 PY
 spr "$tmp/t.png" "$O/logot.spr"; spr "$tmp/b.png" "$O/logob.spr"; rm -rf "$tmp"
+spr --cmpr "$P/textures/levels/bgTitle0.png" "$O/title.spr" 56 64 672 512   # the lab room the title screen sits in (bgTitle atlas top-left, minus its dark outer margin)
 python3 -I "$T/mklasers.py" "$A/xml/LazerPatterns.xml" "$O/lasers.txt"
 python3 -I "$T/mkmissile.py" "$A/xml/MissileProbability.xml" "$O/missile.txt"
 python3 -I "$T/mkzappers.py" "$A/xml/ObstaclePatterns.xml" "$O/zappers.txt"
