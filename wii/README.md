@@ -439,3 +439,11 @@ Two more of the game's real gadgets are in the shop, with their real names, icon
 Lab staff now walk along the floor in both directions: scientists and the hard-hat workers, drawn from `Characters/Barry/{scientist,worker}{Body,Head}` with the same 4x8 rig as Barry (row 0 walking, row 2 when knocked over). Jetpack fire from above, or running into them in a vehicle, knocks them flat. Spawn rate, walking speed and the hit rule are mine; the game's own staff come from a body-parts atlas (`Characters/workers0`) with their animation in native code, so this is a stand-in using the costume sheets. A test run knocked over 13.
 
 Nerd Repellent (real name, icon and description) is now in the shop: with it, no staff appear.
+
+## Missions
+
+`tools/mkmissions.py` reads the game's `xml/MissionSystem/Missions.xml` (bxml) and the string tables at build time and writes `missions.txt` to the SD card: the 33 of the 63 active missions whose type this port can track (games played, coins and tokens per game or in total, distance targets, finishing between two distances, reaching a distance without coins or without a vehicle, distance on foot, along the ceiling or in vehicles, gravity flips, vehicles collected, buying an item). Their text and numbers are the game's own. Three are active at a time, as in the game; progress is kept in `missions.sav`, a banner shows when one completes, and the pause screen lists the three with progress for the cumulative ones. The order missions come in (file order) and the absence of rewards (the game's stars and levels, `MissionRewards.xml`) are this port's simplifications. Types needing things this port lacks (high fives, near misses, alarm lights, the slot machine, named vehicles, consumables) are left out.
+
+`strtab.py` fix: the third word of a language record is the length in bytes, not the second (characters); strings with the game's icon glyphs were cut short. U+E005 is the metre glyph and is written as `M`.
+
+In the test build two missions completed in one run, were replaced by the next two, and the new coin total already counted that run.

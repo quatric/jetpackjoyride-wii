@@ -338,6 +338,57 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
 #define DIST(sc) ((int)((sc) / 27.f))
+
+/* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
+   three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
+enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_N };
+static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
+    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY"};
+#define MAXM 64
+static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
+static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT; }
+static void saveMissions(void) {
+    char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
+    fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
+}
+static void loadMissions(int useSave) {
+    char pp[128], ln[160]; snprintf(pp, sizeof pp, "%smissions.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
+    while (nmis < MAXM && fgets(ln, sizeof ln, f)) {
+        char *h = strtok(ln, "\t"), *a = strtok(NULL, "\t"), *b = strtok(NULL, "\t"), *t = strtok(NULL, "\r\n"); if (!h || !a || !b || !t) continue;
+        int k = 0; while (k < M_N && strcmp(h, mName[k])) k++; if (k == M_N) continue;
+        mType[nmis] = k; mP1[nmis] = atoi(a); mP2[nmis] = atoi(b); snprintf(mText[nmis], sizeof mText[nmis], "%s", t); nmis++;
+    }
+    fclose(f);
+    if (nmis < 3) { nmis = 0; return; }
+    snprintf(pp, sizeof pp, "%smissions.sav", dir); f = useSave ? fopen(pp, "r") : NULL;
+    if (f) { int v[8]; if (fscanf(f, "%d %d %d %d %d %d %d %d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6], &v[7]) == 8 && v[0] >= 0 && v[0] < nmis && v[1] >= 0 && v[1] < nmis && v[2] >= 0 && v[2] < nmis) {
+        for (int i = 0; i < 3; i++) { mAct[i] = v[i]; mProg[i] = v[3 + i]; } mNext = v[6] % nmis; mDone = v[7]; } fclose(f); }
+}
+static void missionDone(int s) {
+    snprintf(mBannerText, sizeof mBannerText, "%s", mText[mAct[s]]); mBanner = 180; mDone++;
+    for (int k = 0; k < nmis; k++) { int c = (mNext + k) % nmis; if (c != mAct[0] && c != mAct[1] && c != mAct[2]) { mAct[s] = c; mNext = (c + 1) % nmis; break; } }
+    mProg[s] = 0; saveMissions();
+}
+/* ending: the run is over (totals are added then); the rest are this run's numbers, distances in metres */
+static void missionCheck(int ending, int dist, int coins, int toks, int veh, int flips, int foot, int roof, int vehM, int spent) {
+    for (int s = 0; s < 3 && nmis; s++) {
+        int m = mAct[s], t = mType[m], p1 = mP1[m], ok = 0;
+        switch (t) {
+        case M_NOCOIN: ok = !coins && dist >= p1; break;
+        case M_NOVEH: ok = !vehM && dist >= p1; break;
+        case M_COING: ok = coins >= p1; break;
+        case M_TOKG: ok = toks >= p1; break;
+        case M_GRAV: ok = flips >= p1; break;
+        case M_RUN: ok = foot >= p1; break;
+        case M_RUB: ok = roof >= p1; break;
+        case M_FLYD: ok = ending && dist >= p1 && dist <= mP2[m]; break;
+        case M_SPEND: ok = (mProg[s] += spent) >= p1; break;
+        default: if (ending && mTotal(t)) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : vehM; ok = mProg[s] >= p1; }
+        }
+        if (ok) missionDone(s);
+    }
+    if (ending || spent) saveMissions();
+}
 /* inv = 42: settings.xml IMMUNITY_TIME 700, read as milliseconds (42 frames at 60 fps; was 90) */
 #define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 42; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; sfx_play(sHurt, 0); } } while (0)
 
@@ -381,8 +432,14 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
-    float y = 300, vy = 0, scroll = 0; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int runVeh = 0, runFlip = 0, runTok = 0, goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
+#ifdef AUTOTEST
+    loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
+    for (int i = 0, k = 0; i < nmis && k < 2; i++) if (mType[i] == (k ? M_TOKG : M_COING)) { mAct[k++] = i; i = -1; }
+#else
+    loadMissions(1);
+#endif
 #ifdef AUTOTEST
     total = 17000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0; gTM = 0; gTG = 0; gBM = 0; gLT = 0; gFP = 1; gAB = 1; gNR = 0;   /* the two newest gadgets start owned so their paths run */
 #endif
@@ -404,10 +461,10 @@ int main(int argc, char **argv) {
         if (state != 1) { paused = 0;
             u32 td = btnDown();
             if (state == 0 && haveMag) {   /* title: START / SHOP; the shop sells the Coin Magnet (price is mine: the APK has none) */
-                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
+                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
-            if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); tokOn = 0; tokWait = 400; pigOn = 0; pigWait = 1200; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+            if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = 0; footPx = roofPx = vehPx = 0; tokOn = 0; tokWait = 400; pigOn = 0; pigWait = 1200; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
 #ifdef AUTOTEST
             pigWait = 300;
             nextBoss = 15;
@@ -425,7 +482,7 @@ int main(int argc, char **argv) {
               if (tt > 0) { inv = 2; if (--tt == 12) y = 60 + rand() % (H - 180); }
               else if (held && !wasHeld) { tt = 24; sfx_play(sTP, 0); }
           } else if (mech == 2 && vt == 3) {   /* Gravity Suit: a press flips gravity between floor and ceiling */
-              if (held && !wasHeld) { gd = -gd; sfx_play(sGC, 0); }
+              if (held && !wasHeld) { gd = -gd; runFlip++; sfx_play(sGC, 0); }
               vy += gd * 0.9f; if (vy > 12) vy = 12; if (vy < -12) vy = -12;
           } else if (mech == 2) {
               if (y >= H - 121) jl = VEH[vt].jumps;
@@ -446,21 +503,24 @@ int main(int argc, char **argv) {
         if (!mech && DIST(scroll) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = gXR ? 450 : 900; }
-            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; sfx_play(sVm[vt], 0); } }
+            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; runVeh++; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead && mech != 2) {   /* death tumble: settings.xml DEATH_GRAVITY 0.24 (x1.5 screen scale), MIN_BOUNCE_VELOCITY 4, DEATH_BOUNCE_DAMPENING 0.99 (damped further here: the unit of that one is a guess) */
             if (gIcy) scroll += 3.f * dead / 60;   /* Icy Exterior: the world keeps sliding past as you stop (settings.xml has DEATH_X_GROUND_FRICTION_ICY; the numbers here are mine) */
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : gBR ? 0.25f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
+        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
         frame++;
-        dist = DIST(scroll);   /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
+        dist = DIST(scroll);
+        if (!dead && state == 1) { if (mech == 2) vehPx += 4; else if (y >= H - 121) footPx += 4; else if (y <= 61) roofPx += 4;
+            missionCheck(0, dist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0); }
+        /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
         if (!dead) {
             if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = spawnWait(dist); } }
             else if (++ptick > pats[cur].time + 60) cur = -1;
@@ -478,7 +538,7 @@ int main(int argc, char **argv) {
             if (tokOn) {
                 tokX -= 4;
                 if (gTM && hypotf(tokX - 95, tokY - (y + 45)) < 200) { tokX += (95 - tokX) * 0.12f; tokY += (y + 45 - tokY) * 0.12f; }   /* Token Magnet pulls it in */
-                if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; score += gTG ? 30 : 10; if (gBM) scroll += 270; sfx_play(sC3, 0); }   /* Boost Machine: a token also carries you 10 m ahead (my reading) */
+                if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; runTok++; score += gTG ? 30 : 10; if (gBM) scroll += 270; sfx_play(sC3, 0); }   /* Boost Machine: a token also carries you 10 m ahead (my reading) */
                 else if (tokX < -60) tokOn = 0;
             }
         }
@@ -671,6 +731,12 @@ int main(int argc, char **argv) {
             }
             drawText(W / 2 - 110, 130, 1.2f, "PAUSED");
         } else if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
+        if (mBanner > 0 && state == 1) { mBanner--; drawText(W / 2 - 150, 120, 0.8f, "MISSION COMPLETE"); drawText(W / 2 - strlen(mBannerText) * 4.2f, 152, 0.45f, mBannerText); }
+        if (paused && nmis) for (int s = 0; s < 3; s++) {   /* the three active missions, as the game's pause screen lists them */
+            char ml[96]; int m = mAct[s];
+            if (mTotal(mType[m]) && mType[m] != M_SPEND) snprintf(ml, sizeof ml, "%s  %d OF %d", mText[m], mProg[s], mP1[m]); else snprintf(ml, sizeof ml, "%s", mText[m]);
+            drawText(40, 330 + s * 26, 0.45f, ml);
+        }
         if (state == 1) { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); snprintf(hud, sizeof hud, "LEVEL %d", lvl + 1); drawText(20, 78, 0.5f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
