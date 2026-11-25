@@ -466,3 +466,7 @@ Near misses and high fives: missions now also include near misses with missiles 
 - Token Gift and Lucky Last now do what their real descriptions say: a free spin every game, and the last spin always wins (at least 250 here).
 - The two slot missions (cash in tokens, win prizes) are tracked, bringing the total to 44 of 63.
 - Test build: tokens were collected and spun in both runs (one run won 2 of its spins).
+
+## Alarm lights
+
+The level files put a red alarm light (`LIGHT_HALLWAY_ALARM`) on a quarter of the wall pieces. Its art is not among the extracted textures, so the light here is a plain red glow generated in code, blinking; it sits on 25% of the foreground pieces (a fixed hash, so each stays put) at one wall height of my choosing, since this port does not carry the levels' per-piece objects. Flying within 40 x 50 px of one counts as brushing past it, which feeds the two alarm missions, bringing the tracked missions to 47 of 63. A test run brushed past 4.

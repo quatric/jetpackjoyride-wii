@@ -271,6 +271,33 @@ static void drawLevel(float scroll) {   /* the game renders at 480x320; x1.5 fil
     }
 }
 
+/* Red alarm lights: the level files put LIGHT_HALLWAY_ALARM on wall pieces (25% of them, offset 48 along the piece).
+   This port does not carry per-piece objects, so every foreground piece gets the same 25% roll (a fixed hash, so a light stays put),
+   at one wall height of my choosing.
+   The game's alarm art is not among the extracted textures; the light drawn here is a plain generated red glow. */
+static Spr alarmS; static int haveAlarm;
+static void makeAlarm(void) {   /* 32x32 RGBA8 red disc with a soft edge */
+    u8 *d = memalign(32, 32 * 32 * 4); if (!d) return;
+    for (int yy = 0; yy < 32; yy++) for (int xx = 0; xx < 32; xx++) {
+        float r = hypotf(xx - 15.5f, yy - 15.5f) / 16; int a = r >= 1 ? 0 : (int)(255 * (1 - r * r)), o = ((yy / 4) * 8 + xx / 4) * 64 + ((yy % 4) * 4 + xx % 4) * 2;
+        d[o] = a; d[o + 1] = 255; d[o + 32] = r < 0.35f ? 200 : 20; d[o + 33] = r < 0.35f ? 200 : 20;   /* RGBA8 tiles: AR plane then GB plane */
+    }
+    DCFlushRange(d, 32 * 32 * 4); alarmS.data = d; alarmS.w = alarmS.h = 32; GX_InitTexObj(&alarmS.obj, d, 32, 32, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE); haveAlarm = 1;
+}
+/* calls f(key, x, y) for each alarm light on screen; key identifies the light across frames */
+static void eachAlarm(float scroll, void (*f)(int, float, float, void *), void *u) {
+    if (!nfg || fgTotal <= 0) return;
+    int lap = (int)(scroll / fgTotal); float x = -fmodf(scroll, fgTotal);
+    for (int k = 0; x < W && k < 128; k++) {
+        int i = fgseq[k]; float w = fgc[i].w * 1.5f, h = fgc[i].h * 1.5f; unsigned hsh = (unsigned)(k * 2654435761u) ^ (unsigned)(lap * 40503u);
+        if ((hsh >> 7) % 100 < 25 && x + w > -40) f(lap * 128 + k, x + w / 2 + 48 * 1.5f, 330, u);   /* one wall height for all (mine): the piece-relative offset lands on the floor for floor pieces */
+        x += w;
+    }
+}
+static void drawAlarmCb(int key, float ax, float ay, void *u) { int fr = *(int *)u; float k = (fr / 8 + key) & 1 ? 26 : 34; quad(&alarmS, ax - k / 2, ay - k / 2, k, k, 0, 0, 1, 1); if ((fr / 8 + key) & 1) {} else quad(&alarmS, ax - 30, ay - 30, 60, 60, 0, 0, 1, 1); }
+typedef struct { float by; int hit; } AlarmQ;
+static void touchAlarmCb(int key, float ax, float ay, void *u) { AlarmQ *q = u; if (fabsf(ax - 105) < 40 && fabsf(ay - q->by) < 50) q->hit = key; }
+
 typedef struct { float minL, maxL, startAngle; int scaleTime, cw, rotT, on, off, withLasers, np, sd[8]; float w[8]; } ZPat;
 static ZPat zp[16]; static int nzp; static float zGlobalP = 80; static int zGlobalSd;
 
@@ -345,12 +372,12 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
    three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
-enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_N };
+enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_N };
 static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
-    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL"};
+    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL"};
 #define MAXM 64
 static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
-static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW; }
+static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT; }
 static void saveMissions(void) {
     char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
     fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
@@ -378,7 +405,7 @@ static void missionSlot(int win) {   /* one Final Spin: a token cashed in, maybe
     saveMissions();
 }
 /* ending: the run is over (totals are added then); the rest are this run's numbers, distances in metres */
-static void missionCheck(int ending, int dist, int coins, int toks, int veh, int flips, int foot, int roof, int vehM, int spent, int nearM, int nearZ, int hi5) {
+static void missionCheck(int ending, int dist, int coins, int toks, int veh, int flips, int foot, int roof, int vehM, int spent, int nearM, int nearZ, int hi5, int alarms) {
     for (int s = 0; s < 3 && nmis; s++) {
         int m = mAct[s], t = mType[m], p1 = mP1[m], ok = 0;
         switch (t) {
@@ -391,9 +418,10 @@ static void missionCheck(int ending, int dist, int coins, int toks, int veh, int
         case M_RUB: ok = roof >= p1; break;
         case M_NEAR: ok = (mP2[m] ? nearZ : nearM) >= p1; break;
         case M_HI5: ok = hi5 >= p1; break;
+        case M_ALARM: ok = alarms >= p1; break;
         case M_FLYD: ok = ending && dist >= p1 && dist <= mP2[m]; break;
         case M_SPEND: ok = (mProg[s] += spent) >= p1; break;
-        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : vehM; ok = mProg[s] >= p1; }
+        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : vehM; ok = mProg[s] >= p1; }
         }
         if (ok) missionDone(s);
     }
@@ -415,7 +443,7 @@ int main(int argc, char **argv) {
     char musicPath[4][160]; { const char *mn[4] = {"music.ogg", "mshop.ogg", "mhog.ogg", "mcolo.ogg"}; for (int i = 0; i < 4; i++) snprintf(musicPath[i], 160, "%s%s", dir, mn[i]); }   /* Music_Level, Music_Shop, Music_Hog, Music_Colossatron from SoundFiles/musicDesc; which one plays when is my mapping */
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
     Spr missile = {0}, alert = {0}; if (!loadSpr(&missile, "missile.spr")) fallbackSpr(&missile); if (!loadSpr(&alert, "alert.spr")) fallbackSpr(&alert);
-    loadMissile(); loadZappers(); loadFont();
+    loadMissile(); loadZappers(); loadFont(); makeAlarm();
     { char cp[128]; snprintf(cp, sizeof cp, "%slevels/count.txt", dir); FILE *cf = fopen(cp, "r"); if (cf) { if (fscanf(cf, "%d", &nLevels) != 1 || nLevels < 1) nLevels = 1; fclose(cf); } }
     int lvl = 0; loadLevel(lvl);
     Spr flame = {0}; int haveFlame = loadSpr(&flame, "flame.spr");   /* 4x2 grid of 16x32 frames, top row = burning */
@@ -442,7 +470,7 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
-    float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
@@ -471,7 +499,7 @@ int main(int argc, char **argv) {
         if (state != 1) { paused = 0;
             u32 td = btnDown();
             if (state == 0 && haveMag) {   /* title: START / SHOP; the shop sells the Coin Magnet (price is mine: the APK has none) */
-                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
+                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
             if (state == 2 && (spinsLeft || spinAnim || spinShow)) {   /* Final Spin: one spin per token; the prize table is mine (the game's is in native code) */
@@ -486,7 +514,7 @@ int main(int argc, char **argv) {
 #endif
                     )) { spinsLeft--; spinAnim = 60; spinShow = 0; sfx_play(sTP, 0); }
             }
-            else if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = 0; footPx = roofPx = vehPx = 0; tokOn = 0; tokFirst = 200 + rand() % 251; tokLast = 0; tokKm = 0; tokInKm = 0; tokStep = 0; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+            else if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = runAlarm = 0; lastAlarm = -1; footPx = roofPx = vehPx = 0; tokOn = 0; tokFirst = 200 + rand() % 251; tokLast = 0; tokKm = 0; tokInKm = 0; tokStep = 0; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
 #ifdef AUTOTEST
             pigFirst = 40; tokFirst = 30;
             nextBoss = 15;
@@ -539,16 +567,17 @@ int main(int argc, char **argv) {
             if (gIcy) scroll += 3.f * dead / 60;   /* Icy Exterior: the world keeps sliding past as you stop (settings.xml has DEATH_X_GROUND_FRICTION_ICY; the numbers here are mine) */
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : gBR ? 0.25f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5);
+        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
         frame++;
         dist = DIST(scroll);
+        if (haveAlarm && !dead && state == 1) { AlarmQ q = {y + 45, -1}; eachAlarm(scroll, touchAlarmCb, &q); if (q.hit >= 0 && q.hit != lastAlarm) { lastAlarm = q.hit; runAlarm++; } }   /* brushed past (within 40/50 px: mine) */
         if (!dead && state == 1) { if (mech == 2) vehPx += 4; else if (y >= H - 121) footPx += 4; else if (y <= 61) roofPx += 4;
-            missionCheck(0, dist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5); }
+            missionCheck(0, dist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm); }
         /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
         if (!dead) {
             if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = spawnWait(dist); } }
@@ -674,6 +703,7 @@ int main(int argc, char **argv) {
         render:
         GX_InvVtxCache(); GX_InvalidateTexAll();
         drawLevel(scroll);
+        if (haveAlarm) eachAlarm(scroll, drawAlarmCb, &frame);
         if (haveC) for (int i = 0; i < nc; i++) {
             float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
             if ((gDog && cy[i] > H - 170 && px < 140 && px + 16 > 20) || (gMagnet && hypotf(px + 8 - 95, cy[i] + 8 - (y + 45)) < 130) || (gVMag && mech == 2 && hypotf(px + 8 - 95, cy[i] + 8 - (y + 50)) < 190) || (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90)) { cgot[i] = 1; score += gMul ? 2 : 1; sfx_play(rand() % 3 == 0 ? sC2 : rand() & 1 ? sC3 : sCoin, 0); continue; }
