@@ -486,3 +486,7 @@ The Head Start consumable is in the shop (icon `ItemIcons/skip.png`, the first s
 ## Stars and ranks
 
 Completing a mission now earns stars equal to its `DIFFICULTY` (1-3) in `Missions.xml`, and every 10 stars is a new rank, using the game's 16 rank titles (`MISSION_LEVEL_1..16` in the string tables, written to `ranks.txt` at build time). A rank-up shows a banner and pays 250 coins times the new rank. The star value, the 10-star step and the payout are mine: the game keeps those rules in native code. The rank and stars show on the title screen and the pause screen and are saved with the missions. In the test build (started one star short) the first completed mission ranked up from the first title to the second. Mission and rank banners no longer draw over the pause menu.
+
+## Final Blast
+
+The bomb consumable (the game's "Final Blast", shop icon `ItemIcons/bomb.png`) is in the shop, bought one at a time and kept as a fifth number in `save.txt`. When Barry stops sliding after a crash and you have one, "PRESS A TO BLAST" shows for 2 seconds; pressing A uses it and blows him on along the floor (the Colossatron boom art as the flash). The game has no description of what it does beyond its name and a BLAST button in the HUD, so the window, the launch (16 forward, 14 up, in screen px per frame), the 300-coin price and the shop line are mine. Using one counts for the last mission type, so all 63 active missions are now tracked. In the on-foot test runs each crash used one (3, then 2, then 1 left) and stretched the 2 m slide to 11 m.
