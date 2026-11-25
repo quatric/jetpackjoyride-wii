@@ -434,4 +434,8 @@ Two more of the game's real gadgets are in the shop, with their real names, icon
 - Flying Pig: a golden pig (the real `Entities/distanceMarkerPig` sheet, its two flying rows) crosses the screen about every 20-30 seconds; touching it pays 30 coins. How often it comes and what it pays are mine. In the test build it spawned 4 times and was collected 3 times in one run.
 - Air Barrys: pressing the jetpack while standing gives a kick off the floor. `perks.xml` has no number for it; the strength is mine. Not exercised by the test build.
 
-Nerd Repellent is still not built: it removes the lab's scientists, and this port has none. The scientists are assembled from a body-parts atlas (`Characters/workers0`) whose layout lives in native code.
+## Scientists and Nerd Repellent
+
+Lab staff now walk along the floor in both directions: scientists and the hard-hat workers, drawn from `Characters/Barry/{scientist,worker}{Body,Head}` with the same 4x8 rig as Barry (row 0 walking, row 2 when knocked over). Jetpack fire from above, or running into them in a vehicle, knocks them flat. Spawn rate, walking speed and the hit rule are mine; the game's own staff come from a body-parts atlas (`Characters/workers0`) with their animation in native code, so this is a stand-in using the costume sheets. A test run knocked over 13.
+
+Nerd Repellent (real name, icon and description) is now in the shop: with it, no staff appear.
