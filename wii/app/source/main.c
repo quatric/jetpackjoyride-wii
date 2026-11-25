@@ -372,12 +372,13 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
    three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
-enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_N };
+enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_VCOL, M_VDIST, M_VDT, M_KOV, M_N };
 static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
-    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL"};
+    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER"};
 #define MAXM 64
 static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
-static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT; }
+static int vColT[5], vKoT[5]; static float vPxT[5];   /* this run, per named vehicle (0 Mech, 1 Hog, 2 Bird, 3 Gravity Suit, 4 Teleporter): pickups, staff knocked down, px travelled */
+static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV; }
 static void saveMissions(void) {
     char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
     fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
@@ -419,9 +420,10 @@ static void missionCheck(int ending, int dist, int coins, int toks, int veh, int
         case M_NEAR: ok = (mP2[m] ? nearZ : nearM) >= p1; break;
         case M_HI5: ok = hi5 >= p1; break;
         case M_ALARM: ok = alarms >= p1; break;
+        case M_VDIST: ok = DIST(vPxT[mP2[m] % 5]) >= p1; break;
         case M_FLYD: ok = ending && dist >= p1 && dist <= mP2[m]; break;
         case M_SPEND: ok = (mProg[s] += spent) >= p1; break;
-        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : vehM; ok = mProg[s] >= p1; }
+        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : t == M_VCOL ? vColT[mP2[m] % 5] : t == M_VDT ? DIST(vPxT[mP2[m] % 5]) : t == M_KOV ? vKoT[mP2[m] % 5] : vehM; ok = mProg[s] >= p1; }
         }
         if (ok) missionDone(s);
     }
@@ -514,7 +516,7 @@ int main(int argc, char **argv) {
 #endif
                     )) { spinsLeft--; spinAnim = 60; spinShow = 0; sfx_play(sTP, 0); }
             }
-            else if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = runAlarm = 0; lastAlarm = -1; footPx = roofPx = vehPx = 0; tokOn = 0; tokFirst = 200 + rand() % 251; tokLast = 0; tokKm = 0; tokInKm = 0; tokStep = 0; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+            else if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = runAlarm = 0; memset(vColT, 0, sizeof vColT); memset(vKoT, 0, sizeof vKoT); memset(vPxT, 0, sizeof vPxT); lastAlarm = -1; footPx = roofPx = vehPx = 0; tokOn = 0; tokFirst = 200 + rand() % 251; tokLast = 0; tokKm = 0; tokInKm = 0; tokStep = 0; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
 #ifdef AUTOTEST
             pigFirst = 40; tokFirst = 30;
             nextBoss = 15;
@@ -560,7 +562,7 @@ int main(int argc, char **argv) {
         if (AUTOTEST != 2 && !mech && DIST(scroll) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = gXR ? 450 : 900; }
-            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; runVeh++; sfx_play(sVm[vt], 0); } }
+            else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; runVeh++; if (vt < 5) vColT[vt]++; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead && mech != 2) {   /* death tumble: settings.xml DEATH_GRAVITY 0.24 (x1.5 screen scale), MIN_BOUNCE_VELOCITY 4, DEATH_BOUNCE_DAMPENING 0.99 (damped further here: the unit of that one is a guess) */
@@ -569,14 +571,14 @@ int main(int argc, char **argv) {
         }
         if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d vm %d/%d/%d/%d/%d vc %d ko %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, DIST(vPxT[0]), DIST(vPxT[1]), DIST(vPxT[2]), DIST(vPxT[3]), DIST(vPxT[4]), vColT[0] + vColT[1] + vColT[2] + vColT[3] + vColT[4], vKoT[0] + vKoT[1] + vKoT[2] + vKoT[3] + vKoT[4], score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
         frame++;
         dist = DIST(scroll);
         if (haveAlarm && !dead && state == 1) { AlarmQ q = {y + 45, -1}; eachAlarm(scroll, touchAlarmCb, &q); if (q.hit >= 0 && q.hit != lastAlarm) { lastAlarm = q.hit; runAlarm++; } }   /* brushed past (within 40/50 px: mine) */
-        if (!dead && state == 1) { if (mech == 2) vehPx += 4; else if (y >= H - 121) footPx += 4; else if (y <= 61) roofPx += 4;
+        if (!dead && state == 1) { if (mech == 2 && vt < 5) vPxT[vt] += 4; if (mech == 2) vehPx += 4; else if (y >= H - 121) footPx += 4; else if (y <= 61) roofPx += 4;
             missionCheck(0, dist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm); }
         /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
         if (!dead) {
@@ -622,7 +624,7 @@ int main(int argc, char **argv) {
                     if (!sci[i].hi5 && !dead && mech != 2 && y >= H - 121 && sci[i].x + 48 > 60 && sci[i].x + 48 < 130) { sci[i].hi5 = 1; runHi5++; }   /* high five: passing them on foot (my rule) */
                     if (sci[i].x + 48 > 70 && sci[i].x + 48 < 120 && (fire || (mech == 2 && y >= H - 200))) {
                         float v = 1.5f * (4 + 4 * (rand() / (RAND_MAX + 1.f))), a = (-45 + rand() % 91) * 0.0174533f;
-                        sci[i].down = 1; sci[i].vx = v * cosf(a); sci[i].vy = -fabsf(v * sinf(a)) - 2; sci[i].spin = (8 + rand() % 38) * (rand() & 1 ? 1 : -1); sciHit++;
+                        sci[i].down = 1; sci[i].vx = v * cosf(a); sci[i].vy = -fabsf(v * sinf(a)) - 2; sci[i].spin = (8 + rand() % 38) * (rand() & 1 ? 1 : -1); sciHit++; if (mech == 2 && vt < 5) vKoT[vt]++;
                     }
                 } else {
                     sci[i].down++; sci[i].x += sci[i].vx; sci[i].h -= sci[i].vy; sci[i].vy += 0.5f * 1.5f; sci[i].vy *= 0.98f; sci[i].ang += sci[i].spin;
