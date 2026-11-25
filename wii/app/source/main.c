@@ -329,7 +329,7 @@ static void loadSave(int *best, int *total) {   /* save.txt: best distance, life
 }
 #define NSHOP 21
 static const char *const shopName[NSHOP] = {"COIN MAGNET", "EZY-DODGE MISSILES", "MISSILE JAMMER", "VEHICLE MAGNET", "INSTA-BALL", "GEMOLOGY", "FREE RIDE", "GRAVITY BELT", "DEZAPINATOR", "X-RAY SPECS", "HALF A BRICK", "FRUIT FLINGER", "FREEZE-O-MATIC", "FLASH", "MAGNETIC TOKENS", "TOKEN GIFT", "TURBO BOOST", "LUCKY LAST", "FLYING PIG", "AIR BARRYS", "NERD REPELLENT"};
-static const char *const shopDesc[NSHOP] = {"PULLS IN NEARBY COINS", "MISSILES FLY SLOWER", "FIRST 3 MISSILES ARE DUDS", "VEHICLES ATTRACT COINS", "BOUNCE FURTHER WHEN HIT", "EVERY COIN COUNTS DOUBLE", "BEGIN EACH RUN IN A VEHICLE", "LESS VERTICAL SPEED", "FIRST ZAPPER IS A DUD", "VEHICLE CRATES COME SOONER", "HEAVY THUD WHEN HIT", "DODGED MISSILES PAY 3 COINS", "SLIDE FURTHER WHEN HIT", "A DOG GRABS GROUND COINS", "TOKENS ARE EASIER TO GRAB", "TOKENS PAY TRIPLE", "TOKENS GIVE A SPEED BOOST", "TOKENS COME TWICE AS OFTEN", "A PIG FULL OF COINS FLIES BY", "JUMP HIGHER OFF THE FLOOR", "NO SCIENTISTS IN THE LAB"};
+static const char *const shopDesc[NSHOP] = {"PULLS IN NEARBY COINS", "MISSILES FLY SLOWER", "FIRST 3 MISSILES ARE DUDS", "VEHICLES ATTRACT COINS", "BOUNCE FURTHER WHEN HIT", "EVERY COIN COUNTS DOUBLE", "BEGIN EACH RUN IN A VEHICLE", "LESS VERTICAL SPEED", "FIRST ZAPPER IS A DUD", "VEHICLE CRATES COME SOONER", "HEAVY THUD WHEN HIT", "DODGED MISSILES PAY 3 COINS", "SLIDE FURTHER WHEN HIT", "A DOG GRABS GROUND COINS", "TOKENS ARE EASIER TO GRAB", "A FREE FINAL SPIN EVERY GAME", "TOKENS GIVE A SPEED BOOST", "THE LAST SPIN ALWAYS WINS", "A PIG FULL OF COINS FLIES BY", "JUMP HIGHER OFF THE FLOOR", "NO SCIENTISTS IN THE LAB"};
 static const int shopPrice[NSHOP] = {500, 400, 450, 600, 350, 700, 800, 450, 500, 500, 300, 400, 350, 600, 500, 500, 600, 450, 650, 400, 300};   /* prices are mine; the APK has none */
 static int *const shopOwn[NSHOP] = {&gMagnet, &gSlow, &gDud, &gVMag, &gRub, &gMul, &gVS, &gGB, &gDZ, &gXR, &gBR, &gFM, &gIcy, &gDog, &gTM, &gTG, &gBM, &gLT, &gFP, &gAB, &gNR};
 static void writeSave(int best, int total) {
@@ -345,12 +345,12 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
    three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
-enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_N };
+enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_N };
 static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
-    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL"};
+    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL"};
 #define MAXM 64
 static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
-static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T; }
+static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW; }
 static void saveMissions(void) {
     char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
     fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
@@ -373,6 +373,10 @@ static void missionDone(int s) {
     for (int k = 0; k < nmis; k++) { int c = (mNext + k) % nmis; if (c != mAct[0] && c != mAct[1] && c != mAct[2]) { mAct[s] = c; mNext = (c + 1) % nmis; break; } }
     mProg[s] = 0; saveMissions();
 }
+static void missionSlot(int win) {   /* one Final Spin: a token cashed in, maybe a prize */
+    for (int s = 0; s < 3 && nmis; s++) { int m = mAct[s]; if (mType[m] == M_SLOTC || (mType[m] == M_SLOTW && win)) { if (++mProg[s] >= mP1[m]) missionDone(s); } }
+    saveMissions();
+}
 /* ending: the run is over (totals are added then); the rest are this run's numbers, distances in metres */
 static void missionCheck(int ending, int dist, int coins, int toks, int veh, int flips, int foot, int roof, int vehM, int spent, int nearM, int nearZ, int hi5) {
     for (int s = 0; s < 3 && nmis; s++) {
@@ -389,7 +393,7 @@ static void missionCheck(int ending, int dist, int coins, int toks, int veh, int
         case M_HI5: ok = hi5 >= p1; break;
         case M_FLYD: ok = ending && dist >= p1 && dist <= mP2[m]; break;
         case M_SPEND: ok = (mProg[s] += spent) >= p1; break;
-        default: if (ending && mTotal(t)) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : vehM; ok = mProg[s] >= p1; }
+        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : vehM; ok = mProg[s] >= p1; }
         }
         if (ok) missionDone(s);
     }
@@ -428,7 +432,7 @@ int main(int argc, char **argv) {
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr popS = {0}; int havePop = loadSpr(&popS, "popup.spr");   /* menus/popupBacking behind the game-over text */
-    Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0; float tokX = 0, tokY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
+    Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0, tokFirst = 300, tokLast = 0, tokKm = 0, tokInKm = 0, tokStep = 0, spinsLeft = 0, spinAnim = 0, spinShow = 0, spinPrize = 0, spinWins = 0; float tokX = 0, tokY = 0, tokTY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
     Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
     Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, zDud = 0, zapDudLeft = 0, bossHp = 3, bossCd = 0, bossKills = 0, boomDone = 0, boomHit = 0, newBest = 0;
     Spr pigS = {0}; int havePig = loadSpr(&pigS, "pig.spr"), pigOn = 0, pigWait = 1200, pigGot = 0, pigFirst = 300, pigLast = 0, pigKm = 0, pigInKm = 0, pigStep = 0; float pigX = 0, pigY = 0, pigTY = 0;   /* Flying Pig: Entities/distanceMarkerPig (rows 3-4 = flying frames); when and what it pays is mine */
@@ -470,9 +474,21 @@ int main(int argc, char **argv) {
                 if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
-            if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = 0; footPx = roofPx = vehPx = 0; tokOn = 0; tokWait = 400; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+            if (state == 2 && (spinsLeft || spinAnim || spinShow)) {   /* Final Spin: one spin per token; the prize table is mine (the game's is in native code) */
+                if (spinAnim) { if (--spinAnim == 0) {
+                    int r = rand() % 100; spinPrize = r < 50 ? 0 : r < 75 ? 100 : r < 90 ? 250 : r < 98 ? 500 : 1000;
+                    if (gLT && !spinsLeft && spinPrize < 250) spinPrize = 250;   /* Lucky Last: the last spin always wins */
+                    total += spinPrize; spinWins += spinPrize > 0; writeSave(best, total); missionSlot(spinPrize > 0); spinShow = 75; sfx_play(spinPrize ? sC3 : sJE, 0); } }
+                else if (spinShow) spinShow--;
+                if (!spinAnim && spinsLeft && frame - goFrame >= 45 && (!spinShow || spinShow < 45) && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2)
 #ifdef AUTOTEST
-            pigFirst = 40;
+                    || 1
+#endif
+                    )) { spinsLeft--; spinAnim = 60; spinShow = 0; sfx_play(sTP, 0); }
+            }
+            else if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = 0; footPx = roofPx = vehPx = 0; tokOn = 0; tokFirst = 200 + rand() % 251; tokLast = 0; tokKm = 0; tokInKm = 0; tokStep = 0; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+#ifdef AUTOTEST
+            pigFirst = 40; tokFirst = 30;
             nextBoss = 15;
 #else
             nextBoss = 1500;
@@ -523,9 +539,9 @@ int main(int argc, char **argv) {
             if (gIcy) scroll += 3.f * dead / 60;   /* Icy Exterior: the world keeps sliding past as you stop (settings.xml has DEATH_X_GROUND_FRICTION_ICY; the numbers here are mine) */
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : gBR ? 0.25f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5);
+        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
@@ -547,11 +563,16 @@ int main(int argc, char **argv) {
             else if (mst == 1) { float t = y + 45; my += fminf(fmaxf(t - my, -mChase * 2), mChase * 2); if (++mtick > 90) { mst = 2; mx = W; mNearMin = 999; } }
         }
         if (haveTok && !dead && state == 1) {
-            if (!tokOn && --tokWait <= 0) { tokOn = 1; tokX = W + 40; tokY = 120 + rand() % (H - 300); tokWait = (500 + rand() % 300) / (gLT ? 2 : 1); }
+            /* slotTokens.xml: first token 200-450 m, at most 3 per 1000 m, never more than 1050 m without one, probability 2.8 (read as a 2.8% roll
+               every 10 m), MAX_Y_MOVE_SPEED 1.8 */
+            if (dist / 1000 != tokKm) { tokKm = dist / 1000; tokInKm = 0; }
+            if (!tokOn && dist >= tokFirst && dist / 10 != tokStep && tokInKm < 3) { tokStep = dist / 10;
+                if (rand() % 1000 < 28 || dist - tokLast >= 1050 || !tokLast) { tokOn = 1; tokLast = dist; tokInKm++; tokX = W + 40; tokY = tokTY = 120 + rand() % (H - 300); } }
+            if (tokOn && !gTM) { if (fabsf(tokTY - tokY) < 1) tokTY = 120 + rand() % (H - 300); tokY += fmaxf(-2.7f, fminf(2.7f, tokTY - tokY)); }
             if (tokOn) {
                 tokX -= 4;
                 if (gTM && hypotf(tokX - 95, tokY - (y + 45)) < 200) { tokX += (95 - tokX) * 0.12f; tokY += (y + 45 - tokY) * 0.12f; }   /* Token Magnet pulls it in */
-                if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; runTok++; score += gTG ? 30 : 10; if (gBM) scroll += 270; sfx_play(sC3, 0); }   /* Boost Machine: a token also carries you 10 m ahead (my reading) */
+                if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; runTok++; if (gBM) scroll += 270; sfx_play(sC3, 0); }   /* Boost Machine: a token also carries you 10 m ahead (my reading) */
                 else if (tokX < -60) tokOn = 0;
             }
         }
@@ -729,11 +750,19 @@ int main(int argc, char **argv) {
                 if (state != 1) {
             char t[48];
             if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t); }
+            int spinning = state == 2 && (spinsLeft || spinAnim || spinShow);
             if (state == 2 && havePop) quad(&popS, 70, 100, 500, 250, 0, 0, 1, 1);
             if (state == 0 && haveLogo) {
                 quad(&logoT, 24, 40, 360, 218, 0, 0, 360.f / 360, 218.f / 220);
                 quad(&logoB, 400, 80, 192, 270, 0, 0, 192.f / 192, 270.f / 272);
             } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
+            if (spinning) {
+                static const int pz[5] = {0, 100, 250, 500, 1000};
+                drawText(95, 175, 0.6f, "FINAL SPIN");
+                for (int k = 0; k < 3; k++) { snprintf(t, sizeof t, "%d", spinAnim ? pz[(frame / 3 + k * 2) % 5] : spinPrize); drawText(110 + k * 140, 200, 1.1f, t); }
+                if (!spinAnim && spinShow) drawText(95, 262, 0.7f, spinPrize ? "YOU WON" : "NO PRIZE");
+                snprintf(t, sizeof t, "TOKENS LEFT %d", spinsLeft); drawText(95, 302, 0.6f, t);
+            } else
             if (state == 2) {   /* layout follows ResultsScreen_New: a distance box, then a collected row */
                 drawText(95, 175, 0.6f, "DISTANCE"); snprintf(t, sizeof t, "%dM", lastDist); drawText(95, 195, 1.3f, t);
                 snprintf(t, sizeof t, "BEST %dM", best); drawText(350, 203, 0.7f, t);
@@ -753,7 +782,7 @@ int main(int argc, char **argv) {
                         snprintf(t, sizeof t, "YOU HAVE %d   B TO GO BACK", total); drawText(150, 362, 0.6f, t);
                     }
                 }
-            } else if ((frame / 30) & 1) drawText(W / 2 - 170, state == 2 ? 400 : 300, 0.9f, "PRESS A TO START");
+            } else if ((frame / 30) & 1) drawText(W / 2 - 170, state == 2 ? 400 : 300, 0.9f, spinning ? (spinsLeft && !spinAnim ? "PRESS A TO SPIN" : "") : "PRESS A TO START");
         }
         if (paused && havePause) {
             static const char *const lab[3] = {"QUIT", "RETRY", "RESUME"};

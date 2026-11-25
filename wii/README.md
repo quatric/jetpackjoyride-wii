@@ -458,3 +458,11 @@ Near misses and high fives: missions now also include near misses with missiles 
 ## On-foot test build
 
 `make -C app AUTOTEST=2` builds a second self-playing variant that stays on foot: no Free Ride, no vehicle pickups, short jetpack hops so Barry mostly runs along the floor, unhittable (the fake input cannot dodge) and ending itself at 400 m. It exercises the paths the vehicle-heavy `AUTOTEST=1` run misses. One run logged 5 high fives, 17 Air Barrys kicks, a zapper near miss, 5 tokens, 5 staff knocked over and 2 completed missions. The missile near-miss path is still unexercised.
+
+## Spin tokens and the Final Spin
+
+- Spin tokens now follow `xml/slotTokens.xml`: the first comes between 200 and 450 m, at most three per 1000 m, never more than 1050 m without one, moving up and down at most 1.8 (game units). `probability 2.8` is read as a 2.8% roll every 10 m (my reading). Tokens no longer pay coins directly.
+- At game over, each token collected is one Final Spin before the results panel (A spins). The game's prize table lives in native code; the one here is mine: half the spins win nothing, the rest win 100, 250, 500 or (2%) 1000 coins.
+- Token Gift and Lucky Last now do what their real descriptions say: a free spin every game, and the last spin always wins (at least 250 here).
+- The two slot missions (cash in tokens, win prizes) are tracked, bringing the total to 44 of 63.
+- Test build: tokens were collected and spun in both runs (one run won 2 of its spins).
