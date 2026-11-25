@@ -372,13 +372,13 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
    three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
-enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_VCOL, M_VDIST, M_VDT, M_KOV, M_N };
+enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_VCOL, M_VDIST, M_VDT, M_KOV, M_SLIDET, M_START, M_USEP, M_N };
 static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
-    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER"};
+    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER", "SLIDE_DIST_TOTAL", "START_FROM_MENU", "USE_ITEM_PERK"};
 #define MAXM 64
 static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
 static int vColT[5], vKoT[5]; static float vPxT[5];   /* this run, per named vehicle (0 Mech, 1 Hog, 2 Bird, 3 Gravity Suit, 4 Teleporter): pickups, staff knocked down, px travelled */
-static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV; }
+static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV || t == M_SLIDET || t == M_START || t == M_USEP; }
 static void saveMissions(void) {
     char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
     fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
@@ -400,6 +400,11 @@ static void missionDone(int s) {
     snprintf(mBannerText, sizeof mBannerText, "%s", mText[mAct[s]]); mBanner = 180; mDone++;
     for (int k = 0; k < nmis; k++) { int c = (mNext + k) % nmis; if (c != mAct[0] && c != mAct[1] && c != mAct[2]) { mAct[s] = c; mNext = (c + 1) % nmis; break; } }
     mProg[s] = 0; saveMissions();
+}
+static void missionEvent(int type, int n) {   /* a counted event outside the per-frame checks (slide distance, game starts, gadget use) */
+    if (n <= 0) return;
+    for (int s = 0; s < 3 && nmis; s++) { int m = mAct[s]; if (mType[m] == type && (mProg[s] += n) >= mP1[m]) missionDone(s); }
+    saveMissions();
 }
 static void missionSlot(int win) {   /* one Final Spin: a token cashed in, maybe a prize */
     for (int s = 0; s < 3 && nmis; s++) { int m = mAct[s]; if (mType[m] == M_SLOTC || (mType[m] == M_SLOTW && win)) { if (++mProg[s] >= mP1[m]) missionDone(s); } }
@@ -423,14 +428,14 @@ static void missionCheck(int ending, int dist, int coins, int toks, int veh, int
         case M_VDIST: ok = DIST(vPxT[mP2[m] % 5]) >= p1; break;
         case M_FLYD: ok = ending && dist >= p1 && dist <= mP2[m]; break;
         case M_SPEND: ok = (mProg[s] += spent) >= p1; break;
-        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : t == M_VCOL ? vColT[mP2[m] % 5] : t == M_VDT ? DIST(vPxT[mP2[m] % 5]) : t == M_KOV ? vKoT[mP2[m] % 5] : vehM; ok = mProg[s] >= p1; }
+        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW && t != M_SLIDET && t != M_START && t != M_USEP) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : t == M_VCOL ? vColT[mP2[m] % 5] : t == M_VDT ? DIST(vPxT[mP2[m] % 5]) : t == M_KOV ? vKoT[mP2[m] % 5] : vehM; ok = mProg[s] >= p1; }
         }
         if (ok) missionDone(s);
     }
     if (ending || spent) saveMissions();
 }
 /* inv = 42: settings.xml IMMUNITY_TIME 700, read as milliseconds (42 frames at 60 fps; was 90) */
-#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 42; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; sfx_play(sHurt, 0); } } while (0)
+#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 42; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; dvx = 4; slideT = 0; sfx_play(sHurt, 0); } } while (0)
 
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
@@ -472,7 +477,7 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
-    float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float dvx = 0, slidePx = 0; int slideT = 0; float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
@@ -518,12 +523,13 @@ int main(int argc, char **argv) {
             }
             else if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = runNearM = runNearZ = runHi5 = runAlarm = 0; memset(vColT, 0, sizeof vColT); memset(vKoT, 0, sizeof vKoT); memset(vPxT, 0, sizeof vPxT); lastAlarm = -1; footPx = roofPx = vehPx = 0; tokOn = 0; tokFirst = 200 + rand() % 251; tokLast = 0; tokKm = 0; tokInKm = 0; tokStep = 0; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
 #ifdef AUTOTEST
-            pigFirst = 40; tokFirst = 30;
+            pigFirst = 40; tokFirst = 30; gBR = 0; gIcy = 0; gRub = 0;   /* plain 0.94 slide in the test runs */
             nextBoss = 15;
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; state = 1;
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; if (fromMenu) missionEvent(M_START, 1);
+              int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
 #if AUTOTEST == 2
             gVS = 0; mkwait = 1 << 30;
 #endif
@@ -553,7 +559,7 @@ int main(int argc, char **argv) {
           wasHeld = held; }
         y += vy; if (inv) inv--;
 #if AUTOTEST == 2
-        inv = 2; if (DIST(scroll) > 400) dead = dead ? dead : 60;   /* on-foot test: cannot be hit (fake input cannot dodge), ends itself at 400 m */
+        inv = 2; if (DIST(scroll) > 400) if (!dead) { dead = 60; dvx = 4; slideT = 0; }   /* on-foot test: cannot be hit (fake input cannot dodge), ends itself at 400 m */
 #endif
         if (!mech && mpick < -900 && !dead && DIST(scroll) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[13] = {20, 20, 50, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
             int tw = 0; for (int i = 0; i < 13; i++) if (haveV[i] && haveV[13] && haveV[14] && haveV[15]) tw += vw[i];
@@ -566,12 +572,16 @@ int main(int argc, char **argv) {
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
         if (dead && mech != 2) {   /* death tumble: settings.xml DEATH_GRAVITY 0.24 (x1.5 screen scale), MIN_BOUNCE_VELOCITY 4, DEATH_BOUNCE_DAMPENING 0.99 (damped further here: the unit of that one is a guess) */
-            if (gIcy) scroll += 3.f * dead / 60;   /* Icy Exterior: the world keeps sliding past as you stop (settings.xml has DEATH_X_GROUND_FRICTION_ICY; the numbers here are mine) */
+            /* the slide: settings.xml DEATH_X_GROUND_FRICTION 0.94 (Insta-ball 1.0, Half a Brick 0.1, Freeze-o-matic 1.0), DEATH_X_AIR_FRICTION 1.0;
+               starting speed = the run speed. The slide is capped at 4 s (mine), which is what ends a frictionless one. */
+            if (y >= H - 121) { dvx *= gBR ? 0.1f : (gRub || gIcy) ? 1.0f : 0.94f; slidePx += dvx; }
+            scroll += dvx;
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : gBR ? 0.25f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm);
+        if (dead == 1 && dvx > 0.3f && ++slideT < 240) dead = 2;   /* still sliding: the run ends when Barry stops */
+        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionEvent(M_SLIDET, DIST(slidePx)); missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d vm %d/%d/%d/%d/%d vc %d ko %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, DIST(vPxT[0]), DIST(vPxT[1]), DIST(vPxT[2]), DIST(vPxT[3]), DIST(vPxT[4]), vColT[0] + vColT[1] + vColT[2] + vColT[3] + vColT[4], vKoT[0] + vKoT[1] + vKoT[2] + vKoT[3] + vKoT[4], score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d slide %d vm %d/%d/%d/%d/%d vc %d ko %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, DIST(slidePx), DIST(vPxT[0]), DIST(vPxT[1]), DIST(vPxT[2]), DIST(vPxT[3]), DIST(vPxT[4]), vColT[0] + vColT[1] + vColT[2] + vColT[3] + vColT[4], vKoT[0] + vKoT[1] + vKoT[2] + vKoT[3] + vKoT[4], score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;

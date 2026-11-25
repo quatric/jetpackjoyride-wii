@@ -10,7 +10,8 @@ TRACKED = {'PLAY_GAME', 'COINS_NOT_COLLECT', 'VEHICLE_COLLECT_ANY', 'TOKENS_COLL
            'COINS_COLLECT_GAME', 'SPEND_COINS', 'FLY_DIST', 'FLY_NO_VEHICLE', 'FLY_DIST_TOTAL', 'CHANGE_GRAVITY', 'RUN_DISTANCE',
            'RUN_DISTANCE_TOTAL', 'RUB_HEAD_DISTANCE', 'RUB_HEAD_DISTANCE_TOTAL', 'VEHICLE_FLY_TOTAL_ANY', 'CLOSE_CALL', 'CLOSE_CALL_TOTAL',
            'SCIENTISTS_HIGH_FIVE', 'SCIENTISTS_HIGH_FIVE_TOTAL', 'SLOTS_CASH_IN', 'SLOTS_WIN_TOTAL',
-           'TOUCH_ALARM', 'TOUCH_ALARM_TOTAL', 'VEHICLE_COLLECT', 'VEHICLE_DISTANCE', 'VEHICLE_FLY_TOTAL', 'SCIENTISTS_KNOCK_OVER'}
+           'TOUCH_ALARM', 'TOUCH_ALARM_TOTAL', 'VEHICLE_COLLECT', 'VEHICLE_DISTANCE', 'VEHICLE_FLY_TOTAL', 'SCIENTISTS_KNOCK_OVER',
+           'SLIDE_DIST_TOTAL', 'START_FROM_MENU', 'USE_ITEM'}
 VEH = {'Mech': 0, 'Bad Ass Hog': 1, 'Bird': 2, 'Gravity Suit': 3, 'Teleporter': 4}   # the app's vehicle numbers
 txt = {}
 for l in subprocess.check_output([sys.executable, '-I', os.path.join(here, 'strtab.py'), os.path.join(A, 'StringTables'), 'English_US']).decode('utf8').splitlines():
@@ -23,6 +24,9 @@ for m in root.iter('Mission'):
     a = m.attrib; h = a['MISSION_HASH']
     if a.get('Active') != 'YES' or h not in TRACKED: continue
     p1, p2 = a.get('Param1', '0'), a.get('Param2', '0')
+    if h == 'USE_ITEM':   # only 'use any gadget' is trackable here: written as USE_ITEM_PERK, once
+        if p1 != 'PERK_ANY': continue
+        h, p1 = 'USE_ITEM_PERK', '1'
     named = h in ('VEHICLE_COLLECT', 'VEHICLE_DISTANCE', 'VEHICLE_FLY_TOTAL', 'SCIENTISTS_KNOCK_OVER')
     if named:   # Param1 names the vehicle, Param2 is the count/distance: written as count, vehicle number
         if p1 not in VEH: continue
