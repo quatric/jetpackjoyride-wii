@@ -832,8 +832,8 @@ int main(int argc, char **argv) {
             if (state == 2) {   /* layout follows ResultsScreen_New: a distance box, then a collected row */
                 drawText(95, 175, 0.6f, "DISTANCE"); snprintf(t, sizeof t, "%dM", lastDist); drawText(95, 195, 1.3f, t);
                 snprintf(t, sizeof t, "BEST %dM", best); drawText(350, 203, 0.7f, t);
-                drawText(95, 262, 0.7f, "COLLECTED"); snprintf(t, sizeof t, "%d", score); drawText(350, 262, 0.8f, t);
-                snprintf(t, sizeof t, "TOTAL %d", total); drawText(95, 302, 0.6f, t);
+                drawText(95, 262, 0.7f, "COLLECTED"); snprintf(t, sizeof t, "%d COINS  %d TOKENS", score, runTok); drawText(300, 262, 0.6f, t);
+                { int ng = 0; for (int g = 0; g < NSHOP; g++) ng += *shopOwn[g]; snprintf(t, sizeof t, "TOTAL %d   GADGETS %d", total, ng); drawText(95, 302, 0.6f, t); }   /* the real overview also lists collected tokens and the gadgets used ("assists") */
                 if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 360, 0.9f, "NEW BEST!");
             }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
