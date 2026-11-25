@@ -46,7 +46,11 @@ static u32 btnDown(void) {
 }
 static u32 btnHeld(void) {
 #ifdef AUTOTEST
+#if AUTOTEST == 2
+    return (tick % 120) < 20 ? WPAD_BUTTON_A : 0;   /* short hops: mostly running on the floor */
+#else
     return ((tick / 25) & 1) ? WPAD_BUTTON_A : 0;
+#endif
 #else
     return INPUT_ButtonsHeld();
 #endif
@@ -434,7 +438,7 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
-    float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
@@ -473,7 +477,11 @@ int main(int argc, char **argv) {
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; state = 1; if (gVS) { mech = 2; do vt = rand() % 13; while (!haveV[vt] || (vt == 12 && !(haveV[13] && haveV[14] && haveV[15]))); jl = 0; gd = 1; tt = 0; mpick = -999; }   /* Vehicle Start gadget */
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; state = 1;
+#if AUTOTEST == 2
+            gVS = 0; mkwait = 1 << 30;
+#endif
+            if (gVS) { mech = 2; do vt = rand() % 13; while (!haveV[vt] || (vt == 12 && !(haveV[13] && haveV[14] && haveV[15]))); jl = 0; gd = 1; tt = 0; mpick = -999; }   /* Vehicle Start gadget */
                 if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
@@ -492,17 +500,20 @@ int main(int argc, char **argv) {
               vy += 1.5f * VEH[vt].g; if (held && bf > 0) { vy -= 1.5f * VEH[vt].b; bf--; } if (!held) bf = 0;
               if (vy > 12) vy = 12;
           } else {
-              if (gAB && held && !wasHeld && y >= H - 121) vy = -9;   /* Air Barrys: a kick off the floor (perks.xml gives no number; 9 is mine) */
+              if (gAB && held && !wasHeld && y >= H - 121) { vy = -9; abKicks++; }   /* Air Barrys: a kick off the floor (perks.xml gives no number; 9 is mine) */
               vy += (held ? -0.9f : 0.6f);
               { float cap = gGB ? 9 * 0.78f : 9; if (vy > cap) vy = cap; if (vy < -cap) vy = -cap; }   /* Gravity Belt: perks.xml value 0.22 as a 22% lower vertical speed cap (my reading) */
           }
           wasHeld = held; }
         y += vy; if (inv) inv--;
+#if AUTOTEST == 2
+        inv = 2; if (DIST(scroll) > 400) dead = dead ? dead : 60;   /* on-foot test: cannot be hit (fake input cannot dodge), ends itself at 400 m */
+#endif
         if (!mech && mpick < -900 && !dead && DIST(scroll) >= 150 && --mkwait <= 0) { mpick = W; nV = 0; static const int vw[13] = {20, 20, 50, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};   /* Vehicles/*.xml <probability>: Mech 20, Hog 20, ProfitBird 50; Gravity Suit and Teleporter have no file in the APK, so 20 */
             int tw = 0; for (int i = 0; i < 13; i++) if (haveV[i] && haveV[13] && haveV[14] && haveV[15]) tw += vw[i];
             if (tw) { int r = rand() % tw; for (int i = 0; i < 13; i++) if (haveV[i] && haveV[13] && haveV[14] && haveV[15] && (r -= vw[i]) < 0) { vt = i; break; } nV = 1; } else mpick = -999; }
 #ifdef AUTOTEST
-        if (!mech && DIST(scroll) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
+        if (AUTOTEST != 2 && !mech && DIST(scroll) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
         if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = gXR ? 450 : 900; }
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; runVeh++; sfx_play(sVm[vt], 0); } }
@@ -514,7 +525,7 @@ int main(int argc, char **argv) {
         }
         if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
@@ -587,7 +598,7 @@ int main(int argc, char **argv) {
             }
         }
 #ifdef AUTOTEST
-        if (cst) { if (mech != 2) { mech = 2; vt = 0; } y = 170 + 90 * sinf(frame * 0.05f) + 28 - 45; }   /* test build only: give a vehicle and steer it into the boss head so the ram path runs */
+        if (AUTOTEST != 2 && cst) { if (mech != 2) { mech = 2; vt = 0; } y = 170 + 90 * sinf(frame * 0.05f) + 28 - 45; }   /* test build only: give a vehicle and steer it into the boss head so the ram path runs */
 #endif
         if (haveCol && !dead && state == 1) {   /* Colossatron: a head and 6 body segments sweep in from the right in a sine wave; touching one is a hit; 25 coins for outlasting it */
             if (!cst && dist >= nextBoss && cur < 0 && mst == 0) { cst = 1; cbx = W + 40; bossHp = 3; bossCd = 0; nextBoss = dist + 2500; }

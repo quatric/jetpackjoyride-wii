@@ -14,7 +14,7 @@ LIBS := -lwiiupdate -linput-wii -lwiikeyboard -lwiiuse -lbte -lfat -lvorbisidec 
 
 # make AUTOTEST=1 builds a self-playing test version
 ifdef AUTOTEST
-CFLAGS += -DAUTOTEST
+CFLAGS += -DAUTOTEST=$(AUTOTEST)   # 2 = stay on foot (no vehicles), for the on-foot paths
 endif
 
 all: jetpackjoyride_wii.dol
