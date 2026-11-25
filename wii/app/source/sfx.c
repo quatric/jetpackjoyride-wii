@@ -4,10 +4,11 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <tremor/ivorbisfile.h>
 #include "audio.h"
 
-#define MAXSFX 16
+#define MAXSFX 32   /* main.c loads 26 */
 #define MAXBYTES (512 * 1024)
 static struct { s16 *d; u32 len; int rate, fmt; } fx[MAXSFX];
 static int nfx;
@@ -22,15 +23,18 @@ int sfx_load(const char *path) {   /* returns id or -1 */
     fx[nfx].rate = vi->rate; fx[nfx].fmt = vi->channels == 1 ? VOICE_MONO_16BIT : VOICE_STEREO_16BIT;
     ov_clear(&vf);
     if (!buf || got < 32) { free(buf); return -1; }
-    got &= ~31u; DCFlushRange(buf, got); fx[nfx].d = (s16 *)buf; fx[nfx].len = got;
+    got &= ~31u;
+    char *fit = memalign(32, got); if (fit) { memcpy(fit, buf, got); free(buf); buf = fit; }   /* give back the rest of the 512 KB decode buffer */
+    DCFlushRange(buf, got); fx[nfx].d = (s16 *)buf; fx[nfx].len = got;
     return nfx++;
 }
 
-int sfx_play(int id, int loop) {   /* returns voice or -1; loop voices are re-armed by sfx_keep() */
+int sfx_play(int id, int loop) {   /* returns voice or -1; loop = repeat until sfx_stop */
     if (id < 0) return -1;
     for (int v = 1; v < 16; v++) if (ASND_StatusVoice(v) == SND_UNUSED) {
-        ASND_SetVoice(v, fx[id].fmt, fx[id].rate, 0, fx[id].d, fx[id].len, 255, 255, NULL);
-        (void)loop; return v;
+        if (loop) ASND_SetInfiniteVoice(v, fx[id].fmt, fx[id].rate, 0, fx[id].d, fx[id].len, 255, 255);
+        else ASND_SetVoice(v, fx[id].fmt, fx[id].rate, 0, fx[id].d, fx[id].len, 255, 255, NULL);
+        return v;
     }
     return -1;
 }

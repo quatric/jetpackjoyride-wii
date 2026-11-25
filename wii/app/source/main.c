@@ -181,6 +181,7 @@ static void drawText(float x, float y, float sc, const char *t) {
     for (; *t; t++) {
         int c = *t; if (c >= 'a' && c <= 'z') c -= 32;
         Glyph *g = &glyph[c & 127];
+        if (!g->xa) g = &glyph[' '];   /* no glyph (punctuation): leave a space */
         if (g->w) quad(&fontSpr, x + g->xo * sc, y + g->yo * sc, g->w * sc, g->h * sc, g->x / 256.f, g->y / 256.f, (g->x + g->w) / 256.f, (g->y + g->h) / 256.f);
         x += g->xa * sc;
     }
@@ -376,7 +377,7 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
-    float y = 300, vy = 0, scroll = 0; int score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float y = 300, vy = 0, scroll = 0; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     total = 17000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0; gTM = 0; gTG = 0; gBM = 0; gLT = 0;
@@ -384,7 +385,7 @@ int main(int argc, char **argv) {
     for (;;) {
         INPUT_Update(); tick++;
         int dist = 0;
-        { int mi = inShop && state == 0 ? 1 : cst ? 3 : (mech == 2 && vt == 1) ? 2 : 0; static int lastMi = 0; if (mi != lastMi) { lastMi = mi; audio_switch(musicPath[mi]);
+        { int mi = inShop && state == 0 ? 1 : state != 1 ? 0 : cst ? 3 : (mech == 2 && vt == 1) ? 2 : 0; static int lastMi = 0; if (mi != lastMi) { lastMi = mi; audio_switch(musicPath[mi]);
 #ifdef AUTOTEST
  { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "music %d tick %d\n", mi, tick); fclose(df); } }
 #endif
@@ -393,7 +394,7 @@ int main(int argc, char **argv) {
         if (state == 1 && (btnDown() & WPAD_BUTTON_PLUS)) { paused ^= 1; psel = 2; }
         if (paused && state == 1 && havePause) {
             u32 bd = btnDown(); if ((bd & WPAD_BUTTON_LEFT) && psel > 0) psel--; if ((bd & WPAD_BUTTON_RIGHT) && psel < 2) psel++;
-            if (bd & (WPAD_BUTTON_A | WPAD_BUTTON_2)) { if (psel == 2) paused = 0; else if (psel == 1) { paused = 0; state = 2; doRestart = 1; } else { paused = 0; state = 0; } }
+            if (bd & (WPAD_BUTTON_A | WPAD_BUTTON_2)) { if (psel == 2) paused = 0; else if (psel == 1) { paused = 0; state = 2; doRestart = 1; } else { paused = 0; state = 0; cst = 0; boomOn = 0; mech = 0; mst = 0; cur = -1; zi = -1; tokOn = 0; mpick = -999; dead = 0; y = 300; vy = 0; } }
         }
         if (paused && state == 1) { dist = DIST(scroll); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
         if (state != 1) { paused = 0;
@@ -402,13 +403,13 @@ int main(int argc, char **argv) {
                 if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
-            if (doRestart || ((btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+            if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); tokOn = 0; tokWait = 400; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
 #ifdef AUTOTEST
             nextBoss = 15;
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; state = 1; if (gVS) { mech = 2; vt = rand() % 13; jl = 0; gd = 1; tt = 0; mpick = -999; }   /* Vehicle Start gadget */
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; state = 1; if (gVS) { mech = 2; do vt = rand() % 13; while (!haveV[vt] || (vt == 12 && !(haveV[13] && haveV[14] && haveV[15]))); jl = 0; gd = 1; tt = 0; mpick = -999; }   /* Vehicle Start gadget */
                 if (nLevels > 1) { lvl = (lvl + 1) % nLevels; loadLevel(lvl); } }
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
@@ -446,7 +447,7 @@ int main(int argc, char **argv) {
             if (gIcy) scroll += 3.f * dead / 60;   /* Icy Exterior: the world keeps sliding past as you stop (settings.xml has DEATH_X_GROUND_FRICTION_ICY; the numbers here are mine) */
             vy += 0.24f * 1.5f; y += vy; if (y >= H - 121) { y = H - 121; vy = fabsf(vy) > 4 * 1.5f ? -vy * (gRub ? 0.8f : gBR ? 0.25f : 0.5f) : 0;   /* Rubber Bones: DEATH_BOUNCE_DAMPENING_RUBBER 1.6 vs 0.99, scaled onto my 0.5 */ }
         }
-        if (dead) { if (--dead == 0) { state = 2; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
+        if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total);
 #ifdef AUTOTEST
             { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
@@ -595,12 +596,18 @@ int main(int argc, char **argv) {
                 if (state != 1) {
             char t[48];
             if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t); }
-            if (state == 2 && havePop) quad(&popS, 70, 105, 500, 215, 0, 0, 1, 1);
+            if (state == 2 && havePop) quad(&popS, 70, 100, 500, 250, 0, 0, 1, 1);
             if (state == 0 && haveLogo) {
                 quad(&logoT, 24, 40, 360, 218, 0, 0, 360.f / 360, 218.f / 220);
                 quad(&logoB, 400, 80, 192, 270, 0, 0, 192.f / 192, 270.f / 272);
             } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
-            if (state == 2) { snprintf(t, sizeof t, "DISTANCE %dM   BEST %dM", lastDist, best); drawText(W / 2 - 230, 190, 0.8f, t); snprintf(t, sizeof t, "COINS %d   TOTAL %d", score, total); drawText(W / 2 - 230, 225, 0.7f, t); if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 265, 0.9f, "NEW BEST!"); }
+            if (state == 2) {   /* layout follows ResultsScreen_New: a distance box, then a collected row */
+                drawText(95, 175, 0.6f, "DISTANCE"); snprintf(t, sizeof t, "%dM", lastDist); drawText(95, 195, 1.3f, t);
+                snprintf(t, sizeof t, "BEST %dM", best); drawText(350, 203, 0.7f, t);
+                drawText(95, 262, 0.7f, "COLLECTED"); snprintf(t, sizeof t, "%d", score); drawText(350, 262, 0.8f, t);
+                snprintf(t, sizeof t, "TOTAL %d", total); drawText(95, 302, 0.6f, t);
+                if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 360, 0.9f, "NEW BEST!");
+            }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
                 float cx = W / 2, cy = 320, bw = 332 * 0.75f, bh = 96 * 0.75f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.75f - 24, cy - 48, 48, 96, 0, 0, 1, 1);
                 drawText(cx + 38 * 0.75f - 55, cy - 16, 0.9f, "START");
@@ -609,11 +616,11 @@ int main(int argc, char **argv) {
                     if (inShop) {
                         quad(&pbk, 120, 150, 400, 250, 0, 0, 1, 1); quad(&shopS[shopI], 140, 200, 80, 80, 0, 0, 1, 1);
                         drawText(240, 180, 0.8f, shopName[shopI]); if (gadTxt[shopI][0]) drawWrapped(240, 212, 0.45f, 18, 31, gadTxt[shopI]); else drawText(240, 220, 0.6f, shopDesc[shopI]);
-                        snprintf(t, sizeof t, *shopOwn[shopI] ? "OWNED" : "%d COINS  A: BUY", shopPrice[shopI]); drawText(240, 318, 0.7f, t);
-                        snprintf(t, sizeof t, "YOU HAVE %d   B: BACK", total); drawText(150, 362, 0.6f, t);
+                        snprintf(t, sizeof t, *shopOwn[shopI] ? "OWNED" : "%d COINS   A TO BUY", shopPrice[shopI]); drawText(240, 318, 0.7f, t);
+                        snprintf(t, sizeof t, "YOU HAVE %d   B TO GO BACK", total); drawText(150, 362, 0.6f, t);
                     }
                 }
-            } else if ((frame / 30) & 1) drawText(W / 2 - 170, 300, 0.9f, "PRESS A TO START");
+            } else if ((frame / 30) & 1) drawText(W / 2 - 170, state == 2 ? 400 : 300, 0.9f, "PRESS A TO START");
         }
         if (paused && havePause) {
             static const char *const lab[3] = {"QUIT", "RETRY", "RESUME"};
@@ -624,7 +631,7 @@ int main(int argc, char **argv) {
             }
             drawText(W / 2 - 110, 130, 1.2f, "PAUSED");
         } else if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
-        { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); snprintf(hud, sizeof hud, "LEVEL %d/%d", lvl + 1, nLevels); drawText(20, 78, 0.5f, hud); }
+        if (state == 1) { char hud[48]; snprintf(hud, sizeof hud, "%dM", dist); drawText(20, 14, 1.0f, hud); snprintf(hud, sizeof hud, "COINS %d", score); drawText(20, 50, 0.7f, hud); snprintf(hud, sizeof hud, "LEVEL %d", lvl + 1); drawText(20, 78, 0.5f, hud); }
         GX_DrawDone(); GX_CopyDisp(xfb[fb ^= 1], GX_TRUE); VIDEO_SetNextFramebuffer(xfb[fb]); VIDEO_Flush(); VIDEO_WaitVSync();
     }
     audio_stop(); INPUT_Shutdown(); return 0;

@@ -415,3 +415,14 @@ The game-over text is now drawn over the real `menus/popupBacking` panel from th
 `tools/strtab.py` decodes the APK's `.str` string tables (`translations_header.str` holds the keys, `translations_<Language>.str` the text; the last word of each header record is the index of its text). The shop now uses the game's real gadget names (`PERK_*_NAME`), e.g. Gemology, Missile Jammer, Dezapinator, Flash. The short descriptions are still mine. Two shop items, Vehicle Magnet and Token Magnet, are my inventions and have no real counterpart. The real list also has Flying Pig and Nerd Repellent, which are not built.
 
 The shop now shows the game's real gadget descriptions (`tools/mkgadgets.py` writes `gadgets.txt` from the string tables; the app word-wraps them). The font has no punctuation glyphs, so commas, periods and hyphens do not draw. The real descriptions describe the real gadgets; what each gadget does in this port is still my own reading, so some will not match their text.
+
+## Bug fixes
+
+- Sound: only the first 16 of the 26 effects ever loaded, so missile and boss explosions, footsteps, landing, the Gravity Suit flip, the teleport, two coin variants and the purchase sound were silent. The limit is now 32, and each effect keeps only the memory it needs instead of a 512 KB buffer.
+- Sound: the jetpack loop played once and then restarted with the jet-start sound; looping voices now loop.
+- Text: the font has only letters, digits and space, so "LEVEL 1/1" read "LEVEL 11" and words with hyphens ran together. Missing characters now leave a space, and the HUD and shop prompts no longer use `/` or `:`.
+- The HUD is hidden on the title and game-over screens.
+- Quitting from the pause menu no longer leaves the boss, its boom, a vehicle, a missile or a token on the title screen, and the boss or Hog music no longer carries over to the title or game over. Restart clears a leftover token or boom.
+- Game over ignores buttons for the first 45 frames, so a mashed jetpack button does not skip it.
+- Free Ride only picks a vehicle whose art loaded.
+- Game-over panel re-spaced so the title no longer touches the distance row.

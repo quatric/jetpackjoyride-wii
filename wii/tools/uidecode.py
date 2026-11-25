@@ -44,6 +44,7 @@ def decode(b):
         assert W(k) == TAB, hex(k)
         hdr = [W(k + 4 + 4 * i) for i in range(6)]; k += 32   # TAB 2 5 id parentFlag class sibling 0
         c['class'] = classes[hdr[4 - 1 + 0]] if False else None
+        c['id'] = ids[hdr[2]] if hdr[2] < len(ids) else hdr[2]   # the word before the header is just the component's running number
         c['hasParent'] = hdr[3]; c['class'] = classes[hdr[4]] if hdr[4] < len(classes) else hdr[4]; c['order'] = hdr[5]
         assert W(k) == TAB; k += 24   # TAB 2 1 0 cb980b91 EMPS
         # skip the two words of the second record's tail (8 bytes) already counted
