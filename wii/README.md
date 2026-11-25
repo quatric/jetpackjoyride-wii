@@ -482,3 +482,7 @@ Named-vehicle missions: the missions that name a vehicle (collect the Mech N tim
 ## Head Start
 
 The Head Start consumable is in the shop (icon `ItemIcons/skip.png`, the first sentence of its real description). Each purchase is one use and the count is kept as a fourth number in `save.txt`. Starting a game from the menu with one in stock uses it and skips the first 750 m, as its text says; the real one flies you there, this one jumps, and the 2 seconds of cover after it and the 250-coin price are mine. Using one counts for the head-start mission, so 62 of the 63 active missions are tracked; the last needs a bomb consumable. In the test build the first run started at 750 m and ended at 841 m, with one Head Start left afterwards.
+
+## Stars and ranks
+
+Completing a mission now earns stars equal to its `DIFFICULTY` (1-3) in `Missions.xml`, and every 10 stars is a new rank, using the game's 16 rank titles (`MISSION_LEVEL_1..16` in the string tables, written to `ranks.txt` at build time). A rank-up shows a banner and pays 250 coins times the new rank. The star value, the 10-star step and the payout are mine: the game keeps those rules in native code. The rank and stars show on the title screen and the pause screen and are saved with the missions. In the test build (started one star short) the first completed mission ranked up from the first title to the second. Mission and rank banners no longer draw over the pause menu.

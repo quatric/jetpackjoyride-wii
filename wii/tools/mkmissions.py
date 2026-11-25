@@ -1,6 +1,7 @@
 #!/usr/bin/env python3 -I
 """Write missions.txt from xml/MissionSystem/Missions.xml (bxml) and the English string table:
-one line per active mission whose type this port can track: TYPE<TAB>param1<TAB>param2<TAB>text (%i/%s filled in).
+one line per active mission whose type this port can track: TYPE<TAB>param1<TAB>param2<TAB>text (%i/%s filled in)<TAB>difficulty;
+also ranks.txt next to it: the 16 MISSION_LEVEL_n rank titles.
 usage: mkmissions.py <assets dir> <out>"""
 import os, subprocess, sys, xml.etree.ElementTree as ET
 here = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, here)
@@ -38,6 +39,8 @@ for m in root.iter('Mission'):
     if named: t = t.replace('%s', name).replace('%i', p1)
     for v in ((p1,) if h.startswith('CLOSE_CALL') else (p1, p2)): t = t.replace('%i', v, 1)
     if h == 'SPEND_COINS': p1 = '1'   # "Buy a new item in the shop": one purchase
-    lines.append('\t'.join((h, p1, p2, clean(t))))
+    lines.append('\t'.join((h, p1, p2, clean(t), a.get('DIFFICULTY', '1'))))
 assert lines, 'no missions'
 open(out, 'w').write('\n'.join(lines) + '\n')
+ranks = [clean(txt['MISSION_LEVEL_%d' % i]) for i in range(1, 17) if 'MISSION_LEVEL_%d' % i in txt]
+open(os.path.join(os.path.dirname(out), 'ranks.txt'), 'w').write('\n'.join(ranks) + '\n')

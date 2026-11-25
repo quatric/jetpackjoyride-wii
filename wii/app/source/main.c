@@ -377,28 +377,35 @@ enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_
 static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
     "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER", "SLIDE_DIST_TOTAL", "START_FROM_MENU", "USE_ITEM_PERK", "USE_ITEM_HEADSTART"};
 #define MAXM 64
-static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
+static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mDiff[MAXM], mStars, mRank, nRanks; static char rankName[16][24];
+#define STARS_PER_RANK 10   /* mine: the game keeps its star and rank rules in native code */
+static int mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
 static int vColT[5], vKoT[5]; static float vPxT[5];   /* this run, per named vehicle (0 Mech, 1 Hog, 2 Bird, 3 Gravity Suit, 4 Teleporter): pickups, staff knocked down, px travelled */
 static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV || t == M_SLIDET || t == M_START || t == M_USEP || t == M_USEHS; }
 static void saveMissions(void) {
     char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
-    fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
+    fprintf(f, "%d %d %d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone, mStars, mRank); fclose(f);
 }
 static void loadMissions(int useSave) {
     char pp[128], ln[160]; snprintf(pp, sizeof pp, "%smissions.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
     while (nmis < MAXM && fgets(ln, sizeof ln, f)) {
-        char *h = strtok(ln, "\t"), *a = strtok(NULL, "\t"), *b = strtok(NULL, "\t"), *t = strtok(NULL, "\r\n"); if (!h || !a || !b || !t) continue;
+        char *h = strtok(ln, "\t"), *a = strtok(NULL, "\t"), *b = strtok(NULL, "\t"), *t = strtok(NULL, "\t\r\n"), *df = strtok(NULL, "\t\r\n"); if (!h || !a || !b || !t) continue;
         int k = 0; while (k < M_N && strcmp(h, mName[k])) k++; if (k == M_N) continue;
-        mType[nmis] = k; mP1[nmis] = atoi(a); mP2[nmis] = atoi(b); snprintf(mText[nmis], sizeof mText[nmis], "%s", t); nmis++;
+        mType[nmis] = k; mDiff[nmis] = df ? atoi(df) : 1; if (mDiff[nmis] < 1) mDiff[nmis] = 1; mP1[nmis] = atoi(a); mP2[nmis] = atoi(b); snprintf(mText[nmis], sizeof mText[nmis], "%s", t); nmis++;
     }
     fclose(f);
     if (nmis < 3) { nmis = 0; return; }
+    snprintf(pp, sizeof pp, "%sranks.txt", dir); f = fopen(pp, "r");
+    if (f) { while (nRanks < 16 && fgets(ln, sizeof ln, f)) { ln[strcspn(ln, "\r\n")] = 0; if (ln[0]) snprintf(rankName[nRanks++], sizeof rankName[0], "%s", ln); } fclose(f); }
     snprintf(pp, sizeof pp, "%smissions.sav", dir); f = useSave ? fopen(pp, "r") : NULL;
-    if (f) { int v[8]; if (fscanf(f, "%d %d %d %d %d %d %d %d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6], &v[7]) == 8 && v[0] >= 0 && v[0] < nmis && v[1] >= 0 && v[1] < nmis && v[2] >= 0 && v[2] < nmis) {
-        for (int i = 0; i < 3; i++) { mAct[i] = v[i]; mProg[i] = v[3 + i]; } mNext = v[6] % nmis; mDone = v[7]; } fclose(f); }
+    if (f) { int v[10] = {0}; if (fscanf(f, "%d %d %d %d %d %d %d %d %d %d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6], &v[7], &v[8], &v[9]) >= 8 && v[0] >= 0 && v[0] < nmis && v[1] >= 0 && v[1] < nmis && v[2] >= 0 && v[2] < nmis) {
+        for (int i = 0; i < 3; i++) { mAct[i] = v[i]; mProg[i] = v[3 + i]; } mNext = v[6] % nmis; mDone = v[7]; mStars = v[8] > 0 ? v[8] : 0; mRank = v[9] > 0 ? v[9] : 0; } fclose(f); }
 }
+static int mRankCoins, mRankUp;   /* coins owed for a rank-up (main adds them to the total), frames left on the rank-up banner */
 static void missionDone(int s) {
     snprintf(mBannerText, sizeof mBannerText, "%s", mText[mAct[s]]); mBanner = 180; mDone++;
+    mStars += mDiff[mAct[s]];   /* stars = the mission's DIFFICULTY (mine) */
+    while (mStars >= STARS_PER_RANK && mRank < 15) { mStars -= STARS_PER_RANK; mRank++; mRankCoins += 250 * mRank; mRankUp = 180; }   /* rank-up pays 250 x the new rank (mine) */
     for (int k = 0; k < nmis; k++) { int c = (mNext + k) % nmis; if (c != mAct[0] && c != mAct[1] && c != mAct[2]) { mAct[s] = c; mNext = (c + 1) % nmis; break; } }
     mProg[s] = 0; saveMissions();
 }
@@ -482,6 +489,7 @@ int main(int argc, char **argv) {
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
+    mStars = STARS_PER_RANK - 1;   /* and one star short of a rank, so the rank-up runs */
     for (int i = 0, k = 0; i < nmis && k < 2; i++) if (mType[i] == (k ? M_TOKG : M_COING)) { mAct[k++] = i; i = -1; }
 #else
     loadMissions(1);
@@ -583,7 +591,7 @@ int main(int argc, char **argv) {
         if (dead == 1 && dvx > 0.3f && ++slideT < 240) dead = 2;   /* still sliding: the run ends when Barry stops */
         if (dead) { if (--dead == 0) { state = 2; goFrame = frame; lastDist = DIST(scroll); newBest = lastDist > best; if (newBest) best = lastDist; total += score; writeSave(best, total); spinsLeft = runTok + (gTG ? 1 : 0); spinAnim = spinShow = 0; missionEvent(M_SLIDET, DIST(slidePx)); missionCheck(1, lastDist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm);
 #ifdef AUTOTEST
-            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d slide %d vm %d/%d/%d/%d/%d vc %d ko %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, DIST(slidePx), DIST(vPxT[0]), DIST(vPxT[1]), DIST(vPxT[2]), DIST(vPxT[3]), DIST(vPxT[4]), vColT[0] + vColT[1] + vColT[2] + vColT[3] + vColT[4], vKoT[0] + vKoT[1] + vKoT[2] + vKoT[3] + vKoT[4], score, total); fclose(df); } }   /* headless check without screenshots */
+            { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d rank %d stars %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d slide %d vm %d/%d/%d/%d/%d vc %d ko %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, mRank, mStars, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, DIST(slidePx), DIST(vPxT[0]), DIST(vPxT[1]), DIST(vPxT[2]), DIST(vPxT[3]), DIST(vPxT[4]), vColT[0] + vColT[1] + vColT[2] + vColT[3] + vColT[4], vKoT[0] + vKoT[1] + vKoT[2] + vKoT[3] + vKoT[4], score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
         else scroll += 4;
@@ -793,7 +801,8 @@ int main(int argc, char **argv) {
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
                 if (state != 1) {
             char t[48];
-            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t); }
+            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 240, 0.7f, t);
+                if (nmis && !inShop) { snprintf(t, sizeof t, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(W / 2 - 170, 268, 0.5f, t); } }
             int spinning = state == 2 && (spinsLeft || spinAnim || spinShow);
             if (state == 2 && havePop) quad(&popS, 70, 100, 500, 250, 0, 0, 1, 1);
             if (state == 0 && haveLogo) {
@@ -837,7 +846,10 @@ int main(int argc, char **argv) {
             }
             drawText(W / 2 - 110, 130, 1.2f, "PAUSED");
         } else if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
-        if (mBanner > 0 && state == 1) { mBanner--; drawText(W / 2 - 150, 120, 0.8f, "MISSION COMPLETE"); drawText(W / 2 - strlen(mBannerText) * 4.2f, 152, 0.45f, mBannerText); }
+        if (mRankCoins) { total += mRankCoins; mRankCoins = 0; writeSave(best, total); }
+        if (mRankUp > 0 && state == 1 && !paused && mBanner <= 0) { char rb[64]; mRankUp--; snprintf(rb, sizeof rb, "RANK UP  %s", nRanks ? rankName[mRank % nRanks] : ""); drawText(W / 2 - strlen(rb) * 8.f, 120, 0.8f, rb); }
+        if (mBanner > 0 && state == 1 && !paused) { mBanner--; drawText(W / 2 - 150, 120, 0.8f, "MISSION COMPLETE"); drawText(W / 2 - strlen(mBannerText) * 4.2f, 152, 0.45f, mBannerText); }
+        if (paused && nmis) { char rl[64]; snprintf(rl, sizeof rl, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(40, 306, 0.45f, rl); }
         if (paused && nmis) for (int s = 0; s < 3; s++) {   /* the three active missions, as the game's pause screen lists them */
             char ml[96]; int m = mAct[s];
             if (mTotal(mType[m]) && mType[m] != M_SPEND) snprintf(ml, sizeof ml, "%s  %d OF %d", mText[m], mProg[s], mP1[m]); else snprintf(ml, sizeof ml, "%s", mText[m]);
