@@ -349,18 +349,19 @@ static const struct { int cols, fw, fh, pw, ph; float g, ib, b; int bfc, jumps; 
     {1, 32, 32, 32, 32, 0, 0, 0, 0, 0, "drb.spr"},   /* 12: Dragon, drawn from the parts below (no pick table entry of its own) */
     {1, 64, 64, 64, 64, 0, 0, 0, 0, 0, "drh.spr"}, {1, 32, 32, 32, 32, 0, 0, 0, 0, 0, "drb.spr"}, {4, 32, 32, 128, 32, 0, 0, 0, 0, 0, "drf.spr"} };   /* 13 head, 14 body, 15 flap: real sprites, my own layout (offsets live in native code) */   /* Jetski: one static 64x32 frame, no rider or handle; Hog-like physics (guess) */   /* Sleigh: real 4x2 animation sheet, reindeer not drawn; Hog-like physics (guess) */   /* Starship: one static frame; Hog-like physics (guess) */   /* DeLorean: one static frame; Hog-like physics (guess) */   /* Ecto-1: one static frame, no rider; Hog-like physics (guess) */   /* Ice Skates: real 4x4 sheet, rider baked in; Hog-like physics (guess) */   /* Hoverboard: sheet is a real 4x3 grid with the rider baked in; the physics are the Hog's, a guess */   /* Teleporter: press = vanish and reappear at a random height; sheet is real, timings are mine */   /* Gravity Suit: sheet layout is real, physics are mine (no definition file in the APK) */   /* Mech/Hog/ProfitBird .xml: JUMP_COUNT = jumps before landing */
 static const int vpick[16] = {6, 1, 13, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static int gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, gFM, gIcy, gDog, gTM, gTG, gBM, gLT, gFP, gAB, gNR;   /* shop: Coin Magnet owned (third number in save.txt) */
+static int gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, gFM, gIcy, gDog, gTM, gTG, gBM, gLT, gFP, gAB, gNR, gHS, gHSnone;   /* gHS: Head Starts in stock (consumable); gHSnone stays 0 so the shop never shows it as owned */
+#define HS_SLOT 21   /* shop: Coin Magnet owned (third number in save.txt) */
 static void loadSave(int *best, int *total) {   /* save.txt: best distance, lifetime coins */
     char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "r"); if (!f) return;
-    int b = 0, t = 0, m = 0; if (fscanf(f, "%d %d %d", &b, &t, &m) >= 2 && b >= 0 && t >= 0) { *best = b; *total = t; gMagnet = m & 1; gSlow = m >> 1 & 1; gDud = m >> 2 & 1; gVMag = m >> 3 & 1; gRub = m >> 4 & 1; gMul = m >> 5 & 1; gVS = m >> 6 & 1; gGB = m >> 7 & 1; gDZ = m >> 8 & 1; gXR = m >> 9 & 1; gBR = m >> 10 & 1; gFM = m >> 11 & 1; gIcy = m >> 12 & 1; gDog = m >> 13 & 1; gTM = m >> 14 & 1; gTG = m >> 15 & 1; gBM = m >> 16 & 1; gLT = m >> 17 & 1; gFP = m >> 18 & 1; gAB = m >> 19 & 1; gNR = m >> 20 & 1; } fclose(f);
+    int b = 0, t = 0, m = 0, hs = 0; if (fscanf(f, "%d %d %d %d", &b, &t, &m, &hs) >= 2 && b >= 0 && t >= 0) { *best = b; *total = t; gHS = hs > 0 ? hs : 0; gMagnet = m & 1; gSlow = m >> 1 & 1; gDud = m >> 2 & 1; gVMag = m >> 3 & 1; gRub = m >> 4 & 1; gMul = m >> 5 & 1; gVS = m >> 6 & 1; gGB = m >> 7 & 1; gDZ = m >> 8 & 1; gXR = m >> 9 & 1; gBR = m >> 10 & 1; gFM = m >> 11 & 1; gIcy = m >> 12 & 1; gDog = m >> 13 & 1; gTM = m >> 14 & 1; gTG = m >> 15 & 1; gBM = m >> 16 & 1; gLT = m >> 17 & 1; gFP = m >> 18 & 1; gAB = m >> 19 & 1; gNR = m >> 20 & 1; } fclose(f);
 }
-#define NSHOP 21
-static const char *const shopName[NSHOP] = {"COIN MAGNET", "EZY-DODGE MISSILES", "MISSILE JAMMER", "VEHICLE MAGNET", "INSTA-BALL", "GEMOLOGY", "FREE RIDE", "GRAVITY BELT", "DEZAPINATOR", "X-RAY SPECS", "HALF A BRICK", "FRUIT FLINGER", "FREEZE-O-MATIC", "FLASH", "MAGNETIC TOKENS", "TOKEN GIFT", "TURBO BOOST", "LUCKY LAST", "FLYING PIG", "AIR BARRYS", "NERD REPELLENT"};
-static const char *const shopDesc[NSHOP] = {"PULLS IN NEARBY COINS", "MISSILES FLY SLOWER", "FIRST 3 MISSILES ARE DUDS", "VEHICLES ATTRACT COINS", "BOUNCE FURTHER WHEN HIT", "EVERY COIN COUNTS DOUBLE", "BEGIN EACH RUN IN A VEHICLE", "LESS VERTICAL SPEED", "FIRST ZAPPER IS A DUD", "VEHICLE CRATES COME SOONER", "HEAVY THUD WHEN HIT", "DODGED MISSILES PAY 3 COINS", "SLIDE FURTHER WHEN HIT", "A DOG GRABS GROUND COINS", "TOKENS ARE EASIER TO GRAB", "A FREE FINAL SPIN EVERY GAME", "TOKENS GIVE A SPEED BOOST", "THE LAST SPIN ALWAYS WINS", "A PIG FULL OF COINS FLIES BY", "JUMP HIGHER OFF THE FLOOR", "NO SCIENTISTS IN THE LAB"};
-static const int shopPrice[NSHOP] = {500, 400, 450, 600, 350, 700, 800, 450, 500, 500, 300, 400, 350, 600, 500, 500, 600, 450, 650, 400, 300};   /* prices are mine; the APK has none */
-static int *const shopOwn[NSHOP] = {&gMagnet, &gSlow, &gDud, &gVMag, &gRub, &gMul, &gVS, &gGB, &gDZ, &gXR, &gBR, &gFM, &gIcy, &gDog, &gTM, &gTG, &gBM, &gLT, &gFP, &gAB, &gNR};
+#define NSHOP 22
+static const char *const shopName[NSHOP] = {"COIN MAGNET", "EZY-DODGE MISSILES", "MISSILE JAMMER", "VEHICLE MAGNET", "INSTA-BALL", "GEMOLOGY", "FREE RIDE", "GRAVITY BELT", "DEZAPINATOR", "X-RAY SPECS", "HALF A BRICK", "FRUIT FLINGER", "FREEZE-O-MATIC", "FLASH", "MAGNETIC TOKENS", "TOKEN GIFT", "TURBO BOOST", "LUCKY LAST", "FLYING PIG", "AIR BARRYS", "NERD REPELLENT", "HEAD START"};
+static const char *const shopDesc[NSHOP] = {"PULLS IN NEARBY COINS", "MISSILES FLY SLOWER", "FIRST 3 MISSILES ARE DUDS", "VEHICLES ATTRACT COINS", "BOUNCE FURTHER WHEN HIT", "EVERY COIN COUNTS DOUBLE", "BEGIN EACH RUN IN A VEHICLE", "LESS VERTICAL SPEED", "FIRST ZAPPER IS A DUD", "VEHICLE CRATES COME SOONER", "HEAVY THUD WHEN HIT", "DODGED MISSILES PAY 3 COINS", "SLIDE FURTHER WHEN HIT", "A DOG GRABS GROUND COINS", "TOKENS ARE EASIER TO GRAB", "A FREE FINAL SPIN EVERY GAME", "TOKENS GIVE A SPEED BOOST", "THE LAST SPIN ALWAYS WINS", "A PIG FULL OF COINS FLIES BY", "JUMP HIGHER OFF THE FLOOR", "NO SCIENTISTS IN THE LAB", "SKIP THE FIRST 750M"};
+static const int shopPrice[NSHOP] = {500, 400, 450, 600, 350, 700, 800, 450, 500, 500, 300, 400, 350, 600, 500, 500, 600, 450, 650, 400, 300, 250};   /* Head Start: one use per purchase */   /* prices are mine; the APK has none */
+static int *const shopOwn[NSHOP] = {&gMagnet, &gSlow, &gDud, &gVMag, &gRub, &gMul, &gVS, &gGB, &gDZ, &gXR, &gBR, &gFM, &gIcy, &gDog, &gTM, &gTG, &gBM, &gLT, &gFP, &gAB, &gNR, &gHSnone};
 static void writeSave(int best, int total) {
-    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d %d\n", best, total, gMagnet | gSlow << 1 | gDud << 2 | gVMag << 3 | gRub << 4 | gMul << 5 | gVS << 6 | gGB << 7 | gDZ << 8 | gXR << 9 | gBR << 10 | gFM << 11 | gIcy << 12 | gDog << 13 | gTM << 14 | gTG << 15 | gBM << 16 | gLT << 17 | gFP << 18 | gAB << 19 | gNR << 20); fclose(f);
+    char pp[128]; snprintf(pp, sizeof pp, "%ssave.txt", dir); FILE *f = fopen(pp, "w"); if (!f) return; fprintf(f, "%d %d %d %d\n", best, total, gMagnet | gSlow << 1 | gDud << 2 | gVMag << 3 | gRub << 4 | gMul << 5 | gVS << 6 | gGB << 7 | gDZ << 8 | gXR << 9 | gBR << 10 | gFM << 11 | gIcy << 12 | gDog << 13 | gTM << 14 | gTG << 15 | gBM << 16 | gLT << 17 | gFP << 18 | gAB << 19 | gNR << 20, gHS); fclose(f);
 }
 static int mflip;   /* draw the next vehicle quad upside down (Gravity Suit on the ceiling) */
 static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h = drawn height; width keeps the frame's aspect */
@@ -372,13 +373,13 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
    three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
-enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_VCOL, M_VDIST, M_VDT, M_KOV, M_SLIDET, M_START, M_USEP, M_N };
+enum { M_PLAY, M_NOCOIN, M_VEHANY, M_TOKG, M_TOKT, M_COINT, M_COING, M_SPEND, M_FLYD, M_NOVEH, M_DISTT, M_GRAV, M_RUN, M_RUNT, M_RUB, M_RUBT, M_VEHDT, M_NEAR, M_NEART, M_HI5, M_HI5T, M_SLOTC, M_SLOTW, M_ALARM, M_ALARMT, M_VCOL, M_VDIST, M_VDT, M_KOV, M_SLIDET, M_START, M_USEP, M_USEHS, M_N };
 static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICLE_COLLECT_ANY", "TOKENS_COLLECT_GAME", "TOKENS_COLLECT_TOTAL", "COINS_COLLECT_TOTAL", "COINS_COLLECT_GAME", "SPEND_COINS",
-    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER", "SLIDE_DIST_TOTAL", "START_FROM_MENU", "USE_ITEM_PERK"};
+    "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER", "SLIDE_DIST_TOTAL", "START_FROM_MENU", "USE_ITEM_PERK", "USE_ITEM_HEADSTART"};
 #define MAXM 64
 static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
 static int vColT[5], vKoT[5]; static float vPxT[5];   /* this run, per named vehicle (0 Mech, 1 Hog, 2 Bird, 3 Gravity Suit, 4 Teleporter): pickups, staff knocked down, px travelled */
-static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV || t == M_SLIDET || t == M_START || t == M_USEP; }
+static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV || t == M_SLIDET || t == M_START || t == M_USEP || t == M_USEHS; }
 static void saveMissions(void) {
     char pp[128]; snprintf(pp, sizeof pp, "%smissions.sav", dir); FILE *f = fopen(pp, "w"); if (!f) return;
     fprintf(f, "%d %d %d %d %d %d %d %d\n", mAct[0], mAct[1], mAct[2], mProg[0], mProg[1], mProg[2], mNext, mDone); fclose(f);
@@ -428,7 +429,7 @@ static void missionCheck(int ending, int dist, int coins, int toks, int veh, int
         case M_VDIST: ok = DIST(vPxT[mP2[m] % 5]) >= p1; break;
         case M_FLYD: ok = ending && dist >= p1 && dist <= mP2[m]; break;
         case M_SPEND: ok = (mProg[s] += spent) >= p1; break;
-        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW && t != M_SLIDET && t != M_START && t != M_USEP) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : t == M_VCOL ? vColT[mP2[m] % 5] : t == M_VDT ? DIST(vPxT[mP2[m] % 5]) : t == M_KOV ? vKoT[mP2[m] % 5] : vehM; ok = mProg[s] >= p1; }
+        default: if (ending && mTotal(t) && t != M_SLOTC && t != M_SLOTW && t != M_SLIDET && t != M_START && t != M_USEP && t != M_USEHS) { mProg[s] += t == M_PLAY ? 1 : t == M_VEHANY ? veh : t == M_TOKT ? toks : t == M_COINT ? coins : t == M_DISTT ? dist : t == M_RUNT ? foot : t == M_RUBT ? roof : t == M_NEART ? (mP2[m] ? nearZ : nearM) : t == M_HI5T ? hi5 : t == M_ALARMT ? alarms : t == M_VCOL ? vColT[mP2[m] % 5] : t == M_VDT ? DIST(vPxT[mP2[m] % 5]) : t == M_KOV ? vKoT[mP2[m] % 5] : vehM; ok = mProg[s] >= p1; }
         }
         if (ok) missionDone(s);
     }
@@ -476,7 +477,7 @@ int main(int argc, char **argv) {
     struct { float x, sp, h, vx, vy, ang, spin; int on, dir, kind, down, alerted, alertD, hi5; } sci[MAXS] = {{0}};   /* sp: own speed (screen px/frame), dir +1 right / -1 left; down: knocked over (h = height above the floor) */
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
-    Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
+    Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr") && loadSpr(&shopS[21], "hs.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
     float dvx = 0, slidePx = 0; int slideT = 0; float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
@@ -486,7 +487,7 @@ int main(int argc, char **argv) {
     loadMissions(1);
 #endif
 #ifdef AUTOTEST
-    total = 17000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0; gTM = 0; gTG = 0; gBM = 0; gLT = 0; gFP = 1; gAB = 1; gNR = 0;   /* the two newest gadgets start owned so their paths run */
+    total = 17000; gMagnet = 0; gSlow = 0; gDud = 0; gVMag = 0; gRub = 0; gMul = 0; gVS = 0; gGB = 0; gDZ = 0; gXR = 0; gBR = 0; gFM = 0; gIcy = 0; gDog = 0; gTM = 0; gTG = 0; gBM = 0; gLT = 0; gFP = 1; gAB = 1; gNR = 0; gHS = 2;   /* the two newest gadgets start owned so their paths run */
 #endif
     for (;;) {
         INPUT_Update(); tick++;
@@ -506,7 +507,7 @@ int main(int argc, char **argv) {
         if (state != 1) { paused = 0;
             u32 td = btnDown();
             if (state == 0 && haveMag) {   /* title: START / SHOP; the shop sells the Coin Magnet (price is mine: the APK has none) */
-                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
+                if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; if (shopI == HS_SLOT) gHS++; else *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
             if (state == 2 && (spinsLeft || spinAnim || spinShow)) {   /* Final Spin: one spin per token; the prize table is mine (the game's is in native code) */
@@ -529,6 +530,7 @@ int main(int argc, char **argv) {
             nextBoss = 1500;
 #endif
             cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; if (fromMenu) missionEvent(M_START, 1);
+              if (fromMenu && gHS > 0) { gHS--; scroll = 750 * 27.f; inv = 120; writeSave(best, total); missionEvent(M_USEHS, 1); }   /* Head Start: skip the first 750 m (the item text); 2 s of cover is mine */
               int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
 #if AUTOTEST == 2
             gVS = 0; mkwait = 1 << 30;
@@ -820,7 +822,7 @@ int main(int argc, char **argv) {
                     if (inShop) {
                         quad(&pbk, 120, 150, 400, 250, 0, 0, 1, 1); quad(&shopS[shopI], 140, 200, 80, 80, 0, 0, 1, 1);
                         drawText(240, 180, 0.8f, shopName[shopI]); if (gadTxt[shopI][0]) drawWrapped(240, 212, 0.45f, 18, 31, gadTxt[shopI]); else drawText(240, 220, 0.6f, shopDesc[shopI]);
-                        snprintf(t, sizeof t, *shopOwn[shopI] ? "OWNED" : "%d COINS   A TO BUY", shopPrice[shopI]); drawText(240, 318, 0.7f, t);
+                        if (shopI == HS_SLOT) snprintf(t, sizeof t, "%d COINS   YOU HAVE %d", shopPrice[shopI], gHS); else snprintf(t, sizeof t, *shopOwn[shopI] ? "OWNED" : "%d COINS   A TO BUY", shopPrice[shopI]); drawText(240, 318, 0.7f, t);
                         snprintf(t, sizeof t, "YOU HAVE %d   B TO GO BACK", total); drawText(150, 362, 0.6f, t);
                     }
                 }

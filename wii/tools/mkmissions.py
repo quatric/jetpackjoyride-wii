@@ -24,9 +24,9 @@ for m in root.iter('Mission'):
     a = m.attrib; h = a['MISSION_HASH']
     if a.get('Active') != 'YES' or h not in TRACKED: continue
     p1, p2 = a.get('Param1', '0'), a.get('Param2', '0')
-    if h == 'USE_ITEM':   # only 'use any gadget' is trackable here: written as USE_ITEM_PERK, once
-        if p1 != 'PERK_ANY': continue
-        h, p1 = 'USE_ITEM_PERK', '1'
+    if h == 'USE_ITEM':   # 'use any gadget' and 'use a head start' are trackable here, once each
+        if p1 not in ('PERK_ANY', 'CONSUMABLE_HEADSTART'): continue
+        h, p1 = 'USE_ITEM_PERK' if p1 == 'PERK_ANY' else 'USE_ITEM_HEADSTART', '1'
     named = h in ('VEHICLE_COLLECT', 'VEHICLE_DISTANCE', 'VEHICLE_FLY_TOTAL', 'SCIENTISTS_KNOCK_OVER')
     if named:   # Param1 names the vehicle, Param2 is the count/distance: written as count, vehicle number
         if p1 not in VEH: continue
