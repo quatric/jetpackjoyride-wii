@@ -425,10 +425,10 @@ int main(int argc, char **argv) {
     Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0; float tokX = 0, tokY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
     Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
     Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, zDud = 0, zapDudLeft = 0, bossHp = 3, bossCd = 0, bossKills = 0, boomDone = 0, boomHit = 0, newBest = 0;
-    Spr pigS = {0}; int havePig = loadSpr(&pigS, "pig.spr"), pigOn = 0, pigWait = 1200, pigGot = 0; float pigX = 0, pigY = 0;   /* Flying Pig: Entities/distanceMarkerPig (rows 3-4 = flying frames); when and what it pays is mine */
+    Spr pigS = {0}; int havePig = loadSpr(&pigS, "pig.spr"), pigOn = 0, pigWait = 1200, pigGot = 0, pigFirst = 300, pigLast = 0, pigKm = 0, pigInKm = 0, pigStep = 0; float pigX = 0, pigY = 0, pigTY = 0;   /* Flying Pig: Entities/distanceMarkerPig (rows 3-4 = flying frames); when and what it pays is mine */
     Spr sciS[4] = {{0}}; int haveSci = loadSpr(&sciS[0], "scib.spr") && loadSpr(&sciS[1], "scih.spr") && loadSpr(&sciS[2], "wrkb.spr") && loadSpr(&sciS[3], "wrkh.spr"), sciWait = 120, sciHit = 0;   /* lab staff: Characters/Barry/{scientist,worker}{Body,Head}, the same 4x8 rig as Barry (row 0 run, row 2 fall) */
 #define MAXS 6
-    struct { float x; int on, dir, kind, down; } sci[MAXS] = {{0}};   /* dir: walking +1 right / -1 left; down: frames since knocked over */
+    struct { float x, sp, h, vx, vy, ang, spin; int on, dir, kind, down, alerted, alertD; } sci[MAXS] = {{0}};   /* sp: own speed (screen px/frame), dir +1 right / -1 left; down: knocked over (h = height above the floor) */
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
@@ -464,9 +464,9 @@ int main(int argc, char **argv) {
                 if (inShop) { if (td & WPAD_BUTTON_DOWN) shopI = (shopI + 1) % NSHOP; if (td & WPAD_BUTTON_UP) shopI = (shopI + NSHOP - 1) % NSHOP; if (td & WPAD_BUTTON_A) { if (!*shopOwn[shopI] && total >= shopPrice[shopI]) { total -= shopPrice[shopI]; *shopOwn[shopI] = 1; writeSave(best, total); missionCheck(0, 0, 1, 0, 0, 0, 0, 0, 1, 1); sfx_play(sC3, 0); } } if (td & (WPAD_BUTTON_B | WPAD_BUTTON_1)) inShop = 0; }
                 else { if (td & (WPAD_BUTTON_UP | WPAD_BUTTON_DOWN)) tsel ^= 1; if (tsel == 1 && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2))) inShop = 1; }
             }
-            if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = 0; footPx = roofPx = vehPx = 0; tokOn = 0; tokWait = 400; pigOn = 0; pigWait = 1200; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
+            if (doRestart || (!(state == 2 && frame - goFrame < 45) && (btnDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) && !(state == 0 && haveMag && (inShop || tsel == 1)))) { doRestart = 0; y = 300; vy = 0; scroll = 0; score = 0; memset(cgot, 0, sizeof cgot); runVeh = runFlip = runTok = 0; footPx = roofPx = vehPx = 0; tokOn = 0; tokWait = 400; pigOn = 0; pigWait = 1200; pigFirst = 200 + rand() % 201; pigLast = 0; pigKm = 0; pigInKm = 0; pigStep = 0; memset(sci, 0, sizeof sci); sciWait = 120; boomOn = 0; bossCd = 0; dudLeft = gDud ? 3 : 0; zapDudLeft = gDZ ? 1 : 0; mkwait = gXR ? 300 : 600; cst = 0;
 #ifdef AUTOTEST
-            pigWait = 300;
+            pigFirst = 40;
             nextBoss = 15;
 #else
             nextBoss = 1500;
@@ -543,24 +543,42 @@ int main(int argc, char **argv) {
             }
         }
         if (haveSci && state == 1) {
-            if (!gNR && !dead && --sciWait <= 0) { sciWait = 70 + rand() % 160; for (int i = 0; i < MAXS; i++) if (!sci[i].on) { sci[i].on = 1; sci[i].dir = rand() & 1 ? 1 : -1; sci[i].x = W + 20;   /* the floor outruns their walk, so both directions enter on the right */ sci[i].kind = rand() % 3 == 0; sci[i].down = 0; break; } }
+            /* WorkerInfo.xml: a spawn roll (40%) about once a second; walk 0.5-2 or run 2-6 (20%); alert when Barry is 200-500 away, then
+               run off (60%, 75% past 1000 m). Knocked over: 4-8 at -45..45 degrees, gravity 0.5, spin 8-45, Y friction 0.98, ground friction 0.94.
+               Game units x1.5 onto the screen; the check interval and the knock-over rule are mine. */
+            if (!gNR && !dead && --sciWait <= 0) { sciWait = 60; if (rand() % 100 < 40) for (int i = 0; i < MAXS; i++) if (!sci[i].on) {
+                memset(&sci[i], 0, sizeof sci[i]); sci[i].on = 1; sci[i].dir = rand() & 1 ? 1 : -1; sci[i].x = W + 20;   /* the floor outruns them, so both directions enter on the right */
+                int run = rand() % 100 < 20; float lo = run ? 2 : 0.5f, hi = run ? 6 : 2; sci[i].sp = 1.5f * (lo + (hi - lo) * (rand() / (RAND_MAX + 1.f)));
+                sci[i].alertD = (int)(1.5f * (200 + rand() % 301)); sci[i].kind = rand() % 3 == 0; break; } }
             int fire = !dead && mech != 2 && y < H - 121 && (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2));
             for (int i = 0; i < MAXS; i++) if (sci[i].on) {
-                sci[i].x -= dead ? 0 : 4;                                  /* the floor scrolls under them */
-                if (!sci[i].down) sci[i].x += sci[i].dir * 1.3f;          /* and they walk */
-                else sci[i].down++;
-                if (!sci[i].down && sci[i].x + 48 > 70 && sci[i].x + 48 < 120 && (fire || (mech == 2 && y >= H - 200))) { sci[i].down = 1; sciHit++; }
+                sci[i].x -= dead ? 0 : 4;                                   /* the floor scrolls under them */
+                if (!sci[i].down) {
+                    if (!sci[i].alerted && sci[i].x - 95 < sci[i].alertD) { sci[i].alerted = 1; if (rand() % 100 < (dist >= 1000 ? 75 : 60)) { sci[i].dir = 1; sci[i].sp = 1.5f * (2 + 4 * (rand() / (RAND_MAX + 1.f))); } }
+                    sci[i].x += sci[i].dir * sci[i].sp;
+                    if (sci[i].x + 48 > 70 && sci[i].x + 48 < 120 && (fire || (mech == 2 && y >= H - 200))) {
+                        float v = 1.5f * (4 + 4 * (rand() / (RAND_MAX + 1.f))), a = (-45 + rand() % 91) * 0.0174533f;
+                        sci[i].down = 1; sci[i].vx = v * cosf(a); sci[i].vy = -fabsf(v * sinf(a)) - 2; sci[i].spin = (8 + rand() % 38) * (rand() & 1 ? 1 : -1); sciHit++;
+                    }
+                } else {
+                    sci[i].down++; sci[i].x += sci[i].vx; sci[i].h -= sci[i].vy; sci[i].vy += 0.5f * 1.5f; sci[i].vy *= 0.98f; sci[i].ang += sci[i].spin;
+                    if (sci[i].h <= 0) { sci[i].h = 0; sci[i].vx *= 0.94f; sci[i].vy = fabsf(sci[i].vy) > 2 * 1.5f ? -fabsf(sci[i].vy) * 0.7f : 0; sci[i].spin *= 0.7f; if (!sci[i].vy) { sci[i].spin = 0; sci[i].ang = sci[i].dir > 0 ? 90 : -90; } }
+                }
                 if (sci[i].x < -100 || sci[i].x > W + 120) sci[i].on = 0;
             }
         }
         if (gFP && havePig && !dead && state == 1) {
-            if (!pigOn && --pigWait <= 0) { pigOn = 1; pigX = W + 40; pigY = 90 + rand() % 160; pigWait = 1200 + rand() % 600;
+            /* flyingPigs.xml: first pig 200-400 m, at most 2 per "kilometre" of 950 m, never more than 770 m without one, probability 4
+               (read here as a 4% roll every 10 m), MAX_Y_MOVE_SPEED 0.5 */
+            if (dist / 950 != pigKm) { pigKm = dist / 950; pigInKm = 0; }
+            if (!pigOn && dist >= pigFirst && dist / 10 != pigStep && pigInKm < 2) { pigStep = dist / 10;
+                if (rand() % 100 < 4 || dist - pigLast >= 770 || !pigLast) { pigOn = 1; pigLast = dist; pigInKm++; pigX = W + 40; pigY = pigTY = 90 + rand() % 160;
 #ifdef AUTOTEST
-                pigWait = 250; { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "pig spawn tick %d y %d\n", tick, (int)pigY); fclose(df); } }
+                    { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "pig spawn dist %d y %d\n", dist, (int)pigY); fclose(df); } }
 #endif
-            }
+                } }
             if (pigOn) {
-                pigX -= 3; float py = pigY + 10 * sinf(frame * 0.08f);
+                pigX -= 3; if (fabsf(pigTY - pigY) < 1) pigTY = 90 + rand() % 160; pigY += fmaxf(-0.75f, fminf(0.75f, pigTY - pigY)); float py = pigY;
                 if (hypotf(pigX + 32 - 95, py + 32 - (y + 45)) < 52) { pigOn = 0; pigGot++; score += gMul ? 60 : 30; sfx_play(sC2, 0); sfx_play(sC3, 0); }
                 else if (pigX < -80) pigOn = 0;
             }
@@ -644,11 +662,11 @@ int main(int argc, char **argv) {
                 int c = (frame / 6 + i) & 3; float u0 = c / 4.f, u1 = (c + 1) / 4.f; if (sci[i].dir < 0) { float t2 = u0; u0 = u1; u1 = t2; }
                 quad(b, x, gy, 96, 96, u0, 0, u1, 1 / 8.f); quad(hd, x + (sci[i].dir > 0 ? 6 : 10), gy - 22, 80, 80, u0, 0, u1, 1 / 8.f);
             } else {
-                float ang = sci[i].down < 12 ? sci[i].down * 7.5f : 90; if (sci[i].dir < 0) ang = -ang;
-                quadRotUV(b, x + 48, gy + 62, 96, 96, ang, 0, 2 / 8.f, 1 / 4.f, 3 / 8.f); quadRotUV(hd, x + 48 + (sci[i].dir > 0 ? 30 : -30) * (ang != 0), gy + 62 - 10, 80, 80, ang, 0, 2 / 8.f, 1 / 4.f, 3 / 8.f);
+                float ang = sci[i].ang, cy2 = gy + 62 - sci[i].h;
+                quadRotUV(b, x + 48, cy2, 96, 96, ang, 0, 2 / 8.f, 1 / 4.f, 3 / 8.f); quadRotUV(hd, x + 48 + 30 * sinf(ang * 0.0174533f), cy2 - 30 * cosf(ang * 0.0174533f), 80, 80, ang, 0, 2 / 8.f, 1 / 4.f, 3 / 8.f);
             }
         }
-        if (pigOn && havePig && state == 1) { int i = (frame / 5) % 8; quad(&pigS, pigX, pigY + 10 * sinf(frame * 0.08f), 64, 64, (i % 4) / 4.f, (2 + i / 4) / 4.f, (i % 4 + 1) / 4.f, (3 + i / 4) / 4.f); }
+        if (pigOn && havePig && state == 1) { int i = (frame / 5) % 8; quad(&pigS, pigX, pigY, 64, 64, (i % 4) / 4.f, (2 + i / 4) / 4.f, (i % 4 + 1) / 4.f, (3 + i / 4) / 4.f); }
         if (gDog && haveDog && state == 1) { int c = (frame / 6) & 3; quad(&dogS, 26, H - 92, 64, 64, c / 4.f, 0.5f, (c + 1) / 4.f, 0.75f); }
         if (cst && boomOn) quad(&boomS, boomX, boomY - 36, 128, 72, 1, 0, 0, 1);
         if (cst) for (int i = 6; i >= 0; i--) { float sx = cbx + i * 44, sy = 170 + 90 * sinf(frame * 0.05f + i * 0.5f); if (i) quad(&colB, sx, sy, 56, 56, 0, 0, 1, 1); else quad(&colH, sx - 8, sy - 4, 64, 64, 1, 0, 0, 1); }

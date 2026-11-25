@@ -447,3 +447,8 @@ Nerd Repellent (real name, icon and description) is now in the shop: with it, no
 `strtab.py` fix: the third word of a language record is the length in bytes, not the second (characters); strings with the game's icon glyphs were cut short. U+E005 is the metre glyph and is written as `M`.
 
 In the test build two missions completed in one run, were replaced by the next two, and the new coin total already counted that run.
+
+## Real tuning for the pig and the lab staff
+
+- Flying Pig now follows `xml/flyingPigs.xml`: the first pig comes between 200 and 400 m, at most two per 950 m "kilometre", never more than 770 m without one, and it drifts up and down at most 0.5 (game units). The file's `probability 4` is read here as a 4% roll every 10 m (my reading). The 30-coin payout is still mine.
+- Lab staff now follow `xml/WorkerInfo.xml`: a 40% spawn roll, walking at 0.5-2 or (20%) running at 2-6, an alert distance of 200-500 from Barry after which 60% (75% past 1000 m) run off, and when knocked over a launch of 4-8 at -45..45 degrees, gravity 0.5, spin 8-45, Y friction 0.98, bounce dampening 0.7 and ground friction 0.94. How often the spawn roll happens (once a second) and what knocks them over are mine; cowering, tripping and curling up are not done.
