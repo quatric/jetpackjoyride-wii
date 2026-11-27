@@ -388,6 +388,10 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
 #define DIST(sc) ((int)((sc) / 27.f))
 /* Configs/game_mode_rules/classic_1.json: start_velocity 175, end_velocity 480 (units/s of the 480x320 game frame), velocity_stop_distance 2250 m.
    x1.5 to our screen, /60 per frame. The file gives no curve, so the ramp is linear (my reading). */
+/* Configs/vehicles/*_1.json START_VELOCITY / MAX_VELOCITY / VELOCITY_INCREASE per VEH index (mech, hog, bird, gsuit, tele, hover, skate, ecto, delorean, starship, sled, jetski).
+   Vehicle::UpdateLevelSpeed: while riding, speed += INCREASE * sin(ease) every frame (ease 0..90 deg in 0.5 s), capped at MAX; after it speed returns by 0.975 per 1/60 s.
+   Where the ride's speed starts (START, as read here) and what it returns to (the level ramp) are my reading of a cut-off decompile. */
+static const float vStart[12] = {200, 400, 250, 250, 250, 300, 300, 400, 400, 400, 200, 250}, vMax[12] = {1000, 6000, 1000, 1000, 1000, 5600, 5600, 6000, 6000, 6000, 800, 1000}, vInc[12] = {0.22f, 0.40f, 0.09f, 0.25f, 0.25f, 0.2f, 0.15f, 0.40f, 0.40f, 0.40f, 0.15f, 0.09f};
 static float runSpeed(int d) { float t = d >= 2250 ? 1.f : d / 2250.f; return (175.f + 305.f * t) * 1.5f / 60.f; }
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
@@ -517,6 +521,7 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr") && loadSpr(&shopS[21], "hs.spr") && loadSpr(&shopS[22], "fb.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
+    float curU = 175, vPhase = 0; int wasMech = 0, spdDecay = 0;
     float spd = 4.375f, dvx = 0, slidePx = 0; int slideT = 0, blastWait = 0, blastUsed = 0, blastFx = 0; float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
@@ -587,7 +592,13 @@ int main(int argc, char **argv) {
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
-        spd = runSpeed(dist);
+        { float base = (175.f + 305.f * (dist >= 2250 ? 1.f : dist / 2250.f));
+          if (mech == 2 && vt >= 0 && vt < 12) {
+              if (!wasMech) { curU = vStart[vt]; vPhase = 0; PKLOG("vehicle mount vt %d speed %d dist %d", vt, (int)curU, dist); }
+              vPhase = fminf(vPhase + 3.f, 90.f); curU = fminf(vMax[vt], curU + vInc[vt] * sinf(vPhase * 0.017453292f)); spdDecay = 1;
+          } else if (spdDecay) { curU = curU * 0.975f + base * 0.025f; if (fabsf(curU - base) < 1.f) spdDecay = 0; }
+          else curU = base;
+          wasMech = mech == 2; spd = curU * 1.5f / 60.f; }
         if (boostPx > 0) { float full = 2000.f * 1.5f / 60.f; spd = boostPx > 810 ? full : spd + (full - spd) * boostPx / 810.f; boostPx -= spd; inv = inv > 2 ? inv : 2; }
         if (slowT > 0) { slowT--; spd *= 0.5f; }
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
