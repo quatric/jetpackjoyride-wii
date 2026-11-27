@@ -41,6 +41,8 @@ spr --cmpr "$P/textures/levels/bgTitle0.png" "$O/title.spr" 56 64 672 512   # th
 python3 -I "$T/mklasers.py" "$A/xml/LazerPatterns.xml" "$O/lasers.txt"
 python3 -I "$T/mkmissile.py" "$A/xml/MissileProbability.xml" "$O/missile.txt"
 python3 -I "$T/mkzappers.py" "$A/xml/ObstaclePatterns.xml" "$O/zappers.txt"
+# per-vehicle obstacle files (LevelPacing.xml streaks), by app vehicle index: mech hog bird gsuit tele hover skate ecto delorean starship sled jetski ("-" = none shipped)
+i=0; for n in MECH HOG - GRAV - HOVER ICESKATES ECT DEL - SLED JETSKI; do [ "$n" = - ] || python3 -I "$T/mkzappers.py" "$A/xml/Streaks/${n}Obstacles.xml" "$O/zv$i.txt" >/dev/null; i=$((i+1)); done
 python3 -I "$T/mkgadgets.py" "$A/StringTables" "$O/gadgets.txt"
 python3 -I "$T/mkmissions.py" "$A" "$O/missions.txt"
 python3 -I "$T/mkpatterns.py" "$A/patterns" "$O/pattern.txt"

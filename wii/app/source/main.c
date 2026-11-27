@@ -304,16 +304,21 @@ typedef struct { float by; int hit; } AlarmQ;
 static void touchAlarmCb(int key, float ax, float ay, void *u) { AlarmQ *q = u; if (fabsf(ax - 105) < 40 && fabsf(ay - q->by) < 50) q->hit = key; }
 
 typedef struct { float minL, maxL, startAngle; int scaleTime, cw, rotT, on, off, withLasers, np, sd[8]; float w[8]; } ZPat;
-static ZPat zp[16]; static int nzp; static float zGlobalP = 80; static int zGlobalSd;
+/* set 0 = ObstaclePatterns.xml (on foot); set 1+vt = Streaks/<vehicle>Obstacles.xml, used while riding vehicle vt (LevelPacing.xml streaks) */
+static ZPat zpS[13][16]; static int nzpS[13]; static float zGlobalPS[13]; static int zGlobalSdS[13], zset;
+#define zp (zpS[zset])
+#define nzp (nzpS[zset])
+#define zGlobalP (zGlobalPS[zset])
+#define zGlobalSd (zGlobalSdS[zset])
 
-static void loadZappers(void) {   /* lines from mkzappers.py */
-    char pp[128], ln[512]; snprintf(pp, sizeof pp, "%szappers.txt", dir);
-    FILE *f = fopen(pp, "r"); if (!f) return;
+static void loadZapperSet(int set) {   /* lines from mkzappers.py */
+    char pp[128], ln[512]; if (set) snprintf(pp, sizeof pp, "%szv%d.txt", dir, set - 1); else snprintf(pp, sizeof pp, "%szappers.txt", dir);
+    FILE *f = fopen(pp, "r"); if (!f) return; zGlobalPS[set] = 80;
     while (fgets(ln, sizeof ln, f)) {
         char *q = ln + 1;
-        if (ln[0] == 'G') { zGlobalP = strtod(q, &q); zGlobalSd = strtol(q, &q, 10); continue; }
-        if (ln[0] != 'Z' || nzp >= 16) continue;
-        ZPat *z = &zp[nzp++];
+        if (ln[0] == 'G') { zGlobalPS[set] = strtod(q, &q); zGlobalSdS[set] = strtol(q, &q, 10); continue; }
+        if (ln[0] != 'Z' || nzpS[set] >= 16) continue;
+        ZPat *z = &zpS[set][nzpS[set]++];
         z->minL = strtod(q, &q); z->maxL = strtod(q, &q); z->scaleTime = strtol(q, &q, 10); z->startAngle = strtod(q, &q);
         z->cw = strtol(q, &q, 10); z->rotT = strtol(q, &q, 10); z->on = strtol(q, &q, 10); z->off = strtol(q, &q, 10);
         z->withLasers = strtol(q, &q, 10); z->np = strtol(q, &q, 10); if (z->np > 8) z->np = 8;
@@ -321,6 +326,8 @@ static void loadZappers(void) {   /* lines from mkzappers.py */
     }
     fclose(f);
 }
+
+static void loadZappers(void) { for (int i = 0; i < 13; i++) loadZapperSet(i); }
 
 static int pickZapper(int dist, int lasers) {
     float tot = 0, wt[16];
@@ -773,6 +780,7 @@ int main(int argc, char **argv) {
             if (mx < -64) { mst = 0; if (gFM) score += 3; if (mNearMin < 70) runNearM++; }   /* near miss: passed within 70 px (my threshold) */   /* Fruit Missiles (perks.xml value 3): a missile you dodge pays 3 coins (my reading) */
         }
         if (!dead) {
+            { int ns = (mech == 2 && vt >= 0 && vt < 12 && nzpS[1 + vt]) ? 1 + vt : 0; if (ns != zset) { zset = ns; zi = -1; PKLOG("zapper set %d patterns %d", zset, nzp); } }   /* riding: that vehicle's own obstacle file */
             if (zi < 0) { if (dist >= zGlobalSd && --zwait <= 0) { zwait = 150; if (rand() % 100 < zGlobalP) { zi = pickZapper(dist, cur >= 0); if (zi >= 0) { zDud = zapDudLeft > 0 ? (zapDudLeft--, 1) : 0; ztick = 0; zNearMin = 999; zHitF = 0; sfx_play(sZap, 0); zx = W + 100; zlen = zp[zi].minL + (zp[zi].maxL - zp[zi].minL) * (rand() / (RAND_MAX + 1.f)); zy = 90 + rand() % 220; } } } }
             else {
                 ztick++; zx -= 4;
