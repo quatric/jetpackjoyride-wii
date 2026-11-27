@@ -522,3 +522,7 @@ The game-over screen now follows the decoded `ResultsScreen_New`: two halves of 
 `Pause.uiscreen` puts a 128-high header (`PauseHeaderBacking`: three `menus/paused/titleBar` pieces, left/middle/right) across the top with the title "PAUSED" in the middle, the score and gadgets on the left and buttons on the right. The pause screen now draws the three pieces and moves "PAUSED" into the bar. The score/gadgets/buttons are not moved into it, the dim backing (`black.tex`) is not drawn, and the HUD text still overlaps the bar's left end. Checked in Dolphin.
 
 The pause screen now also dims the game behind it (a generated translucent black quad standing in for `black.tex`, as `BlackBacking` does). Checked in Dolphin.
+
+## Layout tool
+
+`tools/uilayout.py x.uiscreen` prints absolute rectangles (960x640, top-left origin) for every component that is visible in the file's initial state. The rule it uses, checked on `ResultsScreen_New` (`LeftSide` lands on x 0-480 and `rightSide` on 480-960): `position` is the offset of a component's centre from its parent's centre; `Fill` takes the parent's rect and `Top/Bottom/Left/Right` sit flush to that edge. Docks `DistributeH/V`, `TopLeft` and table layouts are not modelled. It cannot give resting positions of things that slide in: the title's `mainMenu` comes out at x -125 (off the left edge) because a trigger animates it in, and those trigger values are not decoded, so the Wii title panel's position is still by eye.
