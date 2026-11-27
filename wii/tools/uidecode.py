@@ -71,10 +71,6 @@ def decode(b):
         if k + 4 <= len(b) and W(k) not in (HC, ESIU):   # trigger / event sections between components are not decoded: resync
             j = b.find(b'HCIU', k); j = j if j >= 0 else b.rfind(b'ESIU'); c['events'] = events(b[k:j]); k = j
     return comps, W(k) == ESIU
-if __name__ == '__main__':
-    for f in sys.argv[1:]:
-        cs, ok = decode(open(f, 'rb').read()); print(f, 'complete' if ok else 'INCOMPLETE')
-        for c in cs: print(' ', c['id'], c['class'], c['order'], c['props'])
 
 
 def events(seg):
@@ -95,3 +91,9 @@ def children(comps):
     for i, c in enumerate(comps):
         ch.setdefault(c['hasParent'], []).append(i)
     return ch
+
+
+if __name__ == '__main__':
+    for f in sys.argv[1:]:
+        cs, ok = decode(open(f, 'rb').read()); print(f, 'complete' if ok else 'INCOMPLETE')
+        for c in cs: print(' ', c['id'], c['class'], c['order'], c['props'])

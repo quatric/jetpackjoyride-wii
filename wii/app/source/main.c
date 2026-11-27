@@ -476,6 +476,7 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
+    Spr hazS = {0}; int haveHaz = loadSpr(&hazS, "hz.spr");   /* TitleScreen mainMenu.hazzardStrip: textures/menus/backings/hazzardTile */
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");
     Spr titleS = {0}; int haveTitle = loadSpr(&titleS, "title.spr");   /* the lab room behind the title (Room0/bgTitle) */   /* title art: textures/logo/default (downscaled to fit) */
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
@@ -816,13 +817,14 @@ int main(int argc, char **argv) {
         if (haveB) quad(&barry, 60, y, 90, 90, 0, 0, (float)barry.w / ((barry.w + 3) / 4 * 4), (float)barry.h / ((barry.h + 3) / 4 * 4));
                 if (state != 1) {
             char t[48];
-            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(W / 2 - 170, 424, 0.6f, t);
-                if (nmis && !inShop) { snprintf(t, sizeof t, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(W / 2 - 170, 448, 0.45f, t); } }
+            if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(270, 424, 0.6f, t);
+                if (nmis && !inShop) { snprintf(t, sizeof t, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(270, 448, 0.45f, t); } }
             int spinning = state == 2 && (spinsLeft || spinAnim || spinShow);
             if (state == 2 && havePop) quad(&popS, 70, 100, 500, 250, 0, 0, 1, 1);
+            if (state == 0 && haveHaz) for (float ty = 0; ty < H; ty += 96) for (float tx = 22; tx < 254; tx += 86) { float fw = 254 - tx < 86 ? 254 - tx : 86, fh = H - ty < 96 ? H - ty : 96; quad(&hazS, tx, ty, fw, fh, 0, 0, fw / 86, fh / 96); }   /* tiled; the tile is 128 px */   /* mainMenu is 310 wide at x -450 from the centre of the 960x640 screen: the left panel */
             if (state == 0 && haveLogo) {
-                quad(&logoT, 24, 40, 360, 218, 0, 0, 360.f / 360, 218.f / 220);
-                quad(&logoB, 400, 80, 192, 270, 0, 0, 192.f / 192, 270.f / 272);
+                quad(&logoT, 270, 20, 360 * 0.95f, 218 * 0.95f, 0, 0, 360.f / 360, 218.f / 220);
+                quad(&logoB, 400, 230, 192 * 0.8f, 270 * 0.8f, 0, 0, 192.f / 192, 270.f / 272);
             } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
             if (spinning) {
                 static const int pz[5] = {0, 100, 250, 500, 1000};
@@ -839,8 +841,8 @@ int main(int argc, char **argv) {
                 if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 360, 0.9f, "NEW BEST!");
             }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
-                float cx = W / 2, cy = 300, bw = 332 * 0.75f, bh = 96 * 0.75f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.75f - 24, cy - 48, 48, 96, 0, 0, 1, 1);
-                drawText(cx + 38 * 0.75f - 55, cy - 16, 0.9f, "START");
+                float cx = 138, cy = 300, bw = 332 * 0.65f, bh = 96 * 0.65f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.65f - 20, cy - 40, 40, 80, 0, 0, 1, 1);
+                drawText(cx + 38 * 0.65f - 45, cy - 14, 0.8f, "START");
                 if (haveMag) {
                     float sy = 370, sw = 260 * 0.6f, sh = 80 * 0.6f; if (tsel == 1) { sw += 8; sh += 6; } quad(&pbk, cx - sw / 2, sy - sh / 2, sw, sh, 0, 0, 1, 1); drawText(cx - 28, sy - 12, 0.7f, "SHOP");
                     if (inShop) {
