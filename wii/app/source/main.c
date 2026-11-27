@@ -376,6 +376,9 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
 #define DIST(sc) ((int)((sc) / 27.f))
+/* Configs/game_mode_rules/classic_1.json: start_velocity 175, end_velocity 480 (units/s of the 480x320 game frame), velocity_stop_distance 2250 m.
+   x1.5 to our screen, /60 per frame. The file gives no curve, so the ramp is linear (my reading). */
+static float runSpeed(int d) { float t = d >= 2250 ? 1.f : d / 2250.f; return (175.f + 305.f * t) * 1.5f / 60.f; }
 
 /* Missions: missions.txt (tools/mkmissions.py: the game's Missions.xml types this port can track, with their real text);
    three active at a time like the game, progress in missions.sav. Which mission comes next is simply file order. */
@@ -498,7 +501,7 @@ int main(int argc, char **argv) {
     float boomX = 0, boomY = 0;   /* Colossatron sonic boom (real sonicBoom.png), timing mine */
     int cst = 0, bossDone = 0, bossHit = 0, nextBoss = 1500; float cbx = 0;   /* "boss": Colossatron art, behaviour is mine */
     Spr shopS[NSHOP] = {{0}}; int haveMag = loadSpr(&shopS[0], "magnet.spr") && loadSpr(&shopS[1], "smiss.spr") && loadSpr(&shopS[2], "dmiss.spr") && loadSpr(&shopS[3], "magnet.spr") && loadSpr(&shopS[4], "rub.spr") && loadSpr(&shopS[5], "gem.spr") && loadSpr(&shopS[6], "vstart.spr") && loadSpr(&shopS[7], "gbelt.spr") && loadSpr(&shopS[8], "dzap.spr") && loadSpr(&shopS[9], "xray.spr") && loadSpr(&shopS[10], "brick.spr") && loadSpr(&shopS[11], "fruit.spr") && loadSpr(&shopS[12], "icy.spr") && loadSpr(&shopS[13], "rdogi.spr") && loadSpr(&shopS[14], "tmag.spr") && loadSpr(&shopS[15], "tgift.spr") && loadSpr(&shopS[16], "boost.spr") && loadSpr(&shopS[17], "lucky.spr") && loadSpr(&shopS[18], "flypig.spr") && loadSpr(&shopS[19], "airb.spr") && loadSpr(&shopS[20], "nerd.spr") && loadSpr(&shopS[21], "hs.spr") && loadSpr(&shopS[22], "fb.spr"), dudLeft = 0;   /* shop items: Coin Magnet 500, Slow Missiles 400, Dud Missiles 450 (prices mine) */ Spr startG = {0}; int haveStart = loadSpr(&startG, "sg.spr");   /* Pause.uiscreen: three 216px buttons (Quit, Retry, Resume) on buttonBacking, icon at -20, label at +68; drawn at 0.6 */
-    float dvx = 0, slidePx = 0; int slideT = 0, blastWait = 0, blastUsed = 0, blastFx = 0; float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
+    float spd = 4.375f, dvx = 0, slidePx = 0; int slideT = 0, blastWait = 0, blastUsed = 0, blastFx = 0; float y = 300, vy = 0, scroll = 0, footPx = 0, roofPx = 0, vehPx = 0; int abKicks = 0, runVeh = 0, runFlip = 0, runTok = 0, runNearM = 0, runNearZ = 0, runHi5 = 0, runAlarm = 0, lastAlarm = -1, zHitF = 0; float mNearMin = 999, zNearMin = 999; int goFrame = 0, score = 0, frame = 0, state = 0, best = 0, lastDist = 0, total = 0;   /* state: 0 title, 1 playing, 2 game over */
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
@@ -561,6 +564,7 @@ int main(int argc, char **argv) {
             frame++; dist = lastDist; if (jetV > 0) { sfx_stop(jetV); jetV = -1; }
             goto render;
         }
+        spd = runSpeed(dist);
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
           if (mech == 2 && vt == 4) {   /* Teleporter: hovers; a press vanishes (invulnerable) and reappears at a random height */
               vy = 0;
@@ -616,11 +620,11 @@ int main(int argc, char **argv) {
             { char pp[128]; snprintf(pp, sizeof pp, "%sdbg.txt", dir); FILE *df = fopen(pp, "a"); if (df) { fprintf(df, "run lvl %d vt %d dist %d tick %d mag %d slow %d dud %d vmag %d rub %d mul %d vs %d gb %d dz %d xr %d br %d boss %d bhit %d boom %d/%d kills %d tok %d pig %d sci %d mis %d rank %d stars %d near %d/%d hi5 %d ab %d spin %d/%d alarm %d slide %d fb %d vm %d/%d/%d/%d/%d vc %d ko %d coins %d left %d\n", lvl, vt, lastDist, tick, gMagnet, gSlow, gDud, gVMag, gRub, gMul, gVS, gGB, gDZ, gXR, gBR, bossDone, bossHit, boomDone, boomHit, bossKills, tokGot, pigGot, sciHit, mDone, mRank, mStars, runNearM, runNearZ, runHi5, abKicks, tokGot, spinWins, runAlarm, DIST(slidePx), gFB, DIST(vPxT[0]), DIST(vPxT[1]), DIST(vPxT[2]), DIST(vPxT[3]), DIST(vPxT[4]), vColT[0] + vColT[1] + vColT[2] + vColT[3] + vColT[4], vKoT[0] + vKoT[1] + vKoT[2] + vKoT[3] + vKoT[4], score, total); fclose(df); } }   /* headless check without screenshots */
 #endif
         } }
-        else scroll += 4;
+        else scroll += spd;
         frame++;
         dist = DIST(scroll);
         if (haveAlarm && !dead && state == 1) { AlarmQ q = {y + 45, -1}; eachAlarm(scroll, touchAlarmCb, &q); if (q.hit >= 0 && q.hit != lastAlarm) { lastAlarm = q.hit; runAlarm++; } }   /* brushed past (within 40/50 px: mine) */
-        if (!dead && state == 1) { if (mech == 2 && vt < 5) vPxT[vt] += 4; if (mech == 2) vehPx += 4; else if (y >= H - 121) footPx += 4; else if (y <= 61) roofPx += 4;
+        if (!dead && state == 1) { if (mech == 2 && vt < 5) vPxT[vt] += spd; if (mech == 2) vehPx += spd; else if (y >= H - 121) footPx += spd; else if (y <= 61) roofPx += spd;
             missionCheck(0, dist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm); }
         /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
         if (!dead) {
