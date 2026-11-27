@@ -43,6 +43,8 @@ python3 -I "$T/mkmissile.py" "$A/xml/MissileProbability.xml" "$O/missile.txt"
 python3 -I "$T/mkzappers.py" "$A/xml/ObstaclePatterns.xml" "$O/zappers.txt"
 # per-vehicle obstacle files (LevelPacing.xml streaks), by app vehicle index: mech hog bird gsuit tele hover skate ecto delorean starship sled jetski ("-" = none shipped)
 i=0; for n in MECH HOG - GRAV - HOVER ICESKATES ECT DEL - SLED JETSKI; do [ "$n" = - ] || python3 -I "$T/mkzappers.py" "$A/xml/Streaks/${n}Obstacles.xml" "$O/zv$i.txt" >/dev/null; i=$((i+1)); done
+# per-vehicle missile files (Ecto uses the Delorean's, as in LevelPacing.xml; ice skates and the Delorean spell it Missiles / Missles)
+i=0; for n in MECHMissles HOGMissles - GRAVMissles - HOVERMissles ICESKATESMissiles DELMissles DELMissles - SLEDMissles JETSKIMissles; do [ "$n" = - ] || python3 -I "$T/mkmissile.py" "$A/xml/Streaks/$n.xml" "$O/mv$i.txt"; i=$((i+1)); done
 python3 -I "$T/mkgadgets.py" "$A/StringTables" "$O/gadgets.txt"
 python3 -I "$T/mkmissions.py" "$A" "$O/missions.txt"
 python3 -I "$T/mkpatterns.py" "$A/patterns" "$O/pattern.txt"

@@ -162,12 +162,22 @@ static int pickPattern(int dist) {   /* weighted by the game's own distance-base
     return -1;
 }
 
-static int mStart = 200; static float mProb = 15, mChase = 1.2f, mSpeed = 10;   /* defaults = MissileProbability.xml */
+static int zset;   /* obstacle/missile set in use: 0 on foot, 1+vt while riding vehicle vt */
+static int mStartS[13]; static float mProbS[13], mChaseS[13], mSpeedS[13];   /* defaults = MissileProbability.xml; sets 1+vt from Streaks/<vehicle>Missles.xml */
+#define mStart (mStartS[zset])
+#define mProb (mProbS[zset])
+#define mChase (mChaseS[zset])
+#define mSpeed (mSpeedS[zset])
 static void loadMissile(void) {
-    char pp[128], ln[128]; snprintf(pp, sizeof pp, "%smissile.txt", dir);
-    FILE *f = fopen(pp, "r"); if (!f) return;
-    if (fgets(ln, sizeof ln, f)) sscanf(ln, "M %d %f %f %f", &mStart, &mProb, &mChase, &mSpeed);
-    fclose(f);
+    char pp[128], ln[128]; mStartS[0] = 200; mProbS[0] = 15; mChaseS[0] = 1.2f; mSpeedS[0] = 10;
+    snprintf(pp, sizeof pp, "%smissile.txt", dir);
+    FILE *f = fopen(pp, "r");
+    if (f) { if (fgets(ln, sizeof ln, f)) sscanf(ln, "M %d %f %f %f", &mStartS[0], &mProbS[0], &mChaseS[0], &mSpeedS[0]); fclose(f); }
+    for (int i = 1; i < 13; i++) {   /* a vehicle without a missile file of its own keeps the on-foot numbers */
+        mStartS[i] = mStartS[0]; mProbS[i] = mProbS[0]; mChaseS[i] = mChaseS[0]; mSpeedS[i] = mSpeedS[0];
+        snprintf(pp, sizeof pp, "%smv%d.txt", dir, i - 1); f = fopen(pp, "r");
+        if (f) { if (fgets(ln, sizeof ln, f)) sscanf(ln, "M %d %f %f %f", &mStartS[i], &mProbS[i], &mChaseS[i], &mSpeedS[i]); fclose(f); }
+    }
 }
 
 typedef struct { short x, y, w, h, xo, yo, xa; } Glyph;
@@ -305,7 +315,7 @@ static void touchAlarmCb(int key, float ax, float ay, void *u) { AlarmQ *q = u; 
 
 typedef struct { float minL, maxL, startAngle; int scaleTime, cw, rotT, on, off, withLasers, np, sd[8]; float w[8]; } ZPat;
 /* set 0 = ObstaclePatterns.xml (on foot); set 1+vt = Streaks/<vehicle>Obstacles.xml, used while riding vehicle vt (LevelPacing.xml streaks) */
-static ZPat zpS[13][16]; static int nzpS[13]; static float zGlobalPS[13]; static int zGlobalSdS[13], zset;
+static ZPat zpS[13][16]; static int nzpS[13]; static float zGlobalPS[13]; static int zGlobalSdS[13];
 #define zp (zpS[zset])
 #define nzp (nzpS[zset])
 #define zGlobalP (zGlobalPS[zset])
@@ -780,7 +790,7 @@ int main(int argc, char **argv) {
             if (mx < -64) { mst = 0; if (gFM) score += 3; if (mNearMin < 70) runNearM++; }   /* near miss: passed within 70 px (my threshold) */   /* Fruit Missiles (perks.xml value 3): a missile you dodge pays 3 coins (my reading) */
         }
         if (!dead) {
-            { int ns = (mech == 2 && vt >= 0 && vt < 12 && nzpS[1 + vt]) ? 1 + vt : 0; if (ns != zset) { zset = ns; zi = -1; PKLOG("zapper set %d patterns %d", zset, nzp); } }   /* riding: that vehicle's own obstacle file */
+            { int ns = (mech == 2 && vt >= 0 && vt < 12 && nzpS[1 + vt]) ? 1 + vt : 0; if (ns != zset) { zset = ns; zi = -1; PKLOG("zapper set %d patterns %d missile %d%% from %d", zset, nzp, (int)mProb, mStart); } }   /* riding: that vehicle's own obstacle file */
             if (zi < 0) { if (dist >= zGlobalSd && --zwait <= 0) { zwait = 150; if (rand() % 100 < zGlobalP) { zi = pickZapper(dist, cur >= 0); if (zi >= 0) { zDud = zapDudLeft > 0 ? (zapDudLeft--, 1) : 0; ztick = 0; zNearMin = 999; zHitF = 0; sfx_play(sZap, 0); zx = W + 100; zlen = zp[zi].minL + (zp[zi].maxL - zp[zi].minL) * (rand() / (RAND_MAX + 1.f)); zy = 90 + rand() % 220; } } } }
             else {
                 ztick++; zx -= 4;
