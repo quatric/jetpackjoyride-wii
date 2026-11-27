@@ -115,12 +115,14 @@ static void gfxInit(void) {
    (scroll) coordinates: cgot 0 = on screen path, 2 = free slot */
 #define MAXT 40
 static float cx[MAXC], cy[MAXC]; static u8 cgot[MAXC]; static int nc;
-static float tcx[MAXC], tcy[MAXC]; static int tStart[MAXT + 1], ntm; static float tW[MAXT];
-static void loadPattern(void) {   /* '1' cells become template coins */
-    char pp[128]; snprintf(pp, sizeof pp, "%spattern.txt", dir);
+static float tcx[MAXC], tcy[MAXC]; static int tStart[MAXT + 1], ntm, tWt[MAXT][2], tSd[MAXT][2], hTop = 50, hBot = 50; static float tW[MAXT];
+static void loadPattern(const char *name) {   /* '1' cells become template coins; "H top bottom" and "= w s [w s]" headers come from mkcoinset.py */
+    char pp[128]; snprintf(pp, sizeof pp, "%s%s", dir, name);
     FILE *f = fopen(pp, "r"); char ln[256]; int row = 0, n = 0; if (!f) return;
+    ntm = 0; hTop = hBot = 50;
     while (fgets(ln, sizeof ln, f)) {
-        if (ln[0] == '=') { if (ntm >= MAXT - 1) break; tStart[ntm] = n; tW[ntm] = 0; ntm++; row = 0; continue; }
+        if (ln[0] == 'H') { sscanf(ln + 1, "%d %d", &hTop, &hBot); continue; }
+        if (ln[0] == '=') { if (ntm >= MAXT - 1) break; tStart[ntm] = n; tW[ntm] = 0; tWt[ntm][0] = 1; tSd[ntm][0] = tSd[ntm][1] = 0; tWt[ntm][1] = -1; sscanf(ln + 1, "%d %d %d %d", &tWt[ntm][0], &tSd[ntm][0], &tWt[ntm][1], &tSd[ntm][1]); ntm++; row = 0; continue; }
         if (ln[0] == '\n' || ln[0] == '\r' || !ntm) continue;
         for (int c = 0; ln[c] && ln[c] != '\n' && ln[c] != '\r'; c++) {
             if (ln[c] == '1' && n < MAXC) { tcx[n] = c * 20.f; tcy[n] = row * 22.f; n++; }
@@ -130,9 +132,12 @@ static void loadPattern(void) {   /* '1' cells become template coins */
     }
     tStart[ntm] = n; fclose(f);
 }
-static float spawnCoins(float scroll) {   /* one random template at the right edge, at a random height; returns its width */
+static float spawnCoins(float scroll, int ridden, int veh) {   /* one weighted template at the right edge; returns its width. ridden = metres into the vehicle ride */
     if (!ntm) return 0;
-    int t = rand() % ntm; float yo = 40 + rand() % 130, x0 = scroll + 640 + 60;
+    int wt[MAXT], tot = 0, t = 0;
+    for (int k = 0; k < ntm; k++) { wt[k] = tWt[k][0]; if (tWt[k][1] >= 0 && ridden >= tSd[k][1]) wt[k] = tWt[k][1]; if (ridden < tSd[k][0] && tWt[k][1] < 0) wt[k] = 0; tot += wt[k]; }
+    if (tot > 0) { int r = rand() % tot; while ((r -= wt[t]) >= 0) t++; } else t = rand() % ntm;
+    float yo = veh ? 40 + (rand() % (hTop + hBot) < hTop ? 0 : 65) + rand() % 65 : 40 + rand() % 130, x0 = scroll + 640 + 60;
     for (int k = tStart[t]; k < tStart[t + 1]; k++) {
         int i = 0; while (i < nc && cgot[i] != 2) i++;
         if (i >= MAXC) break; if (i == nc) nc++;
@@ -512,7 +517,7 @@ int main(int argc, char **argv) {
     if (!loadSpr(&barry, "barry.spr")) fallbackSpr(&barry);
     if (!loadSpr(&coin, "coin.spr")) fallbackSpr(&coin);
     int haveB = 1, haveC = 1;
-    loadPattern(); loadLasers();
+    loadPattern("pattern.txt"); loadLasers();
     { char mp[160]; snprintf(mp, sizeof mp, "%smusic.ogg", dir); audio_start(mp); }
     char musicPath[4][160]; { const char *mn[4] = {"music.ogg", "mshop.ogg", "mhog.ogg", "mcolo.ogg"}; for (int i = 0; i < 4; i++) snprintf(musicPath[i], 160, "%s%s", dir, mn[i]); }   /* Music_Level, Music_Shop, Music_Hog, Music_Colossatron from SoundFiles/musicDesc; which one plays when is my mapping */
     Spr beam = {0}, emit = {0}; if (!loadSpr(&beam, "beam.spr")) fallbackSpr(&beam); if (!loadSpr(&emit, "emit.spr")) fallbackSpr(&emit);
@@ -530,7 +535,7 @@ int main(int argc, char **argv) {
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
-    float evAt = -1; int evL = 0, evM = 0, evZ = 0;   /* spawn events (Level::SetupNextSpawner): one roll picks a coin pattern, laser, missile or gate */
+    int rideD0 = 0, cvOn = 0; float evAt = -1; int evL = 0, evM = 0, evZ = 0;   /* spawn events (Level::SetupNextSpawner): one roll picks a coin pattern, laser, missile or gate */
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!ntm) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
@@ -628,10 +633,11 @@ int main(int argc, char **argv) {
         }
         { float base = (175.f + 305.f * (dist >= 2250 ? 1.f : dist / 2250.f));
           if (mech == 2 && vt >= 0 && vt < 12) {
-              if (!wasMech) { curU = vStart[vt]; vPhase = 0; PKLOG("vehicle mount vt %d speed %d dist %d", vt, (int)curU, dist); }
+              if (!wasMech) { curU = vStart[vt]; vPhase = 0; PKLOG("vehicle mount vt %d speed %d dist %d", vt, (int)curU, dist); rideD0 = dist; { char cn[16]; snprintf(cn, sizeof cn, "cv%d.txt", vt); char cp[128]; snprintf(cp, sizeof cp, "%s%s", dir, cn); FILE *cf = fopen(cp, "r"); cvOn = cf != 0; if (cf) { fclose(cf); loadPattern(cn); } } }
               vPhase = fminf(vPhase + 3.f, 90.f); curU = fminf(vMax[vt], curU + vInc[vt] * sinf(vPhase * 0.017453292f)); spdDecay = 1;
           } else if (spdDecay) { curU = curU * 0.975f + base * 0.025f; if (fabsf(curU - base) < 1.f) spdDecay = 0; }
           else curU = base;
+          if (wasMech && mech != 2 && cvOn) { cvOn = 0; loadPattern("pattern.txt"); }
           wasMech = mech == 2; spd = curU * 1.5f / 60.f; }
         if (boostPx > 0) { float full = 2000.f * 1.5f / 60.f; spd = boostPx > 810 ? full : spd + (full - spd) * boostPx / 810.f; boostPx -= spd; inv = inv > 2 ? inv : 2; }
         if (slowT > 0) { slowT--; spd *= 0.5f; }
@@ -706,7 +712,7 @@ int main(int argc, char **argv) {
                 float wl = (!riding && boostPx <= 0 && zi < 0 && mst == 0 && cur < 0) ? laserProb(dist) : 0, tot = wc + wl + wm + wg, ext = 0;
                 evL = evM = evZ = 0;
                 if (tot > 0) { float r = tot * (rand() / (RAND_MAX + 1.f));
-                    if (r < wc) { ext = spawnCoins(scroll) / spd; PKLOG("event coin dist %d width %d", dist, (int)(ext * spd)); }
+                    if (r < wc) { ext = spawnCoins(scroll, dist - rideD0, riding && cvOn) / spd; PKLOG("event coin dist %d width %d", dist, (int)(ext * spd)); }
                     else if (r < wc + wl) { evL = 1; ext = 240; PKLOG("event laser dist %d", dist); }
                     else if (r < wc + wl + wm) { evM = 1; ext = 150; PKLOG("event missile dist %d", dist); }
                     else { evZ = 1; ext = 150; PKLOG("event gate dist %d", dist); } }

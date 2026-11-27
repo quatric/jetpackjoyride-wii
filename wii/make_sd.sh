@@ -48,6 +48,8 @@ i=0; for n in MECHMissles HOGMissles - GRAVMissles - HOVERMissles ICESKATESMissi
 python3 -I "$T/mkgadgets.py" "$A/StringTables" "$O/gadgets.txt"
 python3 -I "$T/mkmissions.py" "$A" "$O/missions.txt"
 python3 -I "$T/mkpatterns.py" "$A/patterns" "$O/pattern.txt"
+# per-vehicle coin pattern sets (Configs/coins_patterns/Streaks_<V>Coins_1.json), indexed by VEH like zv<N>.txt; HOG/CFT/SAM have none here
+i=0; for n in MECH - - GRAV - HOVER ICESKATES ECTO DEL - - JETSKI; do [ "$n" = - ] || python3 -I "$T/mkcoinset.py" "$A/Configs/coins_patterns/Streaks_${n}Coins_1.json" "$A/patterns" "$O/cv$i.txt"; i=$((i+1)); done
 python3 -I "$T/mklevels.py" "$A/xml/LevelFiles" "$S" "$O/levels"
 cp "$A/Music_Level.ogg" "$O/music.ogg"; cp "$A/Music_Shop.ogg" "$O/mshop.ogg"; cp "$A/Music_Hog.ogg" "$O/mhog.ogg"; cp "$A/Music_Colossatron.ogg" "$O/mcolo.ogg"
 # sound events (names from xml/SoundFiles.xml packages): <ogg in sound/> <name used by the app>

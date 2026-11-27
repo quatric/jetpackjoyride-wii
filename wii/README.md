@@ -585,3 +585,6 @@ Checked the last place they could hide. The starter jetpack is built as `Jetpack
 
 ## Dynamic coin patterns
 Coins are no longer one looping preloaded field. `pattern.txt` is parsed into templates; each coin spawn event (see spawn events above) places one random template at the right edge at a random height (40..170 px), into a pool in world coordinates that is freed once off-screen and cleared on run start. The next event gap includes the pattern's width. Vehicle-specific coin sets/weights are still not used.
+
+### Vehicle coin sets
+`tools/mkcoinset.py` converts `Configs/coins_patterns/Streaks_<V>Coins_1.json` into `cv<N>.txt` (per-pattern weights with startDistance steps in metres ridden, plus TopHalfWeight/BottomHalfWeight for the spawn height). The app loads `cv<N>.txt` on mount and the standard set again after the ride. Standard-set weights are uniform (5), so only vehicle sets are weighted. HOG, CFT and SAM have no coin config in the shipped files and use the standard set. Verified to load without errors in headless Dolphin; a coin event inside a vehicle ride was not reached in the 85 s run.
