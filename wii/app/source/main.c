@@ -133,11 +133,14 @@ static void loadPattern(void) {   /* '1' cells become coins; '=' starts the next
 typedef struct { int time, n, np; float y[MAXY]; int sd[8]; float w[8]; } Pat;
 static Pat pats[MAXP]; static int npat;
 
+static int nlg, lgSd[8]; static float lgV[8];   /* LazerPatterns.xml root: chance of a laser event by distance */
+static float laserProb(int dist) { float v = 0; for (int i = 0; i < nlg; i++) if (lgSd[i] <= dist) v = lgV[i]; return v; }
 static void loadLasers(void) {   /* lines: P time n y.. np (startDistance weight).. */
     char pp[128], ln[512]; snprintf(pp, sizeof pp, "%slasers.txt", dir);
     FILE *f = fopen(pp, "r"); if (!f) return;
     while (npat < MAXP && fgets(ln, sizeof ln, f)) {
         char *q = ln + 1; Pat *t = &pats[npat];
+        if (ln[0] == 'G') { nlg = 0; while (nlg < 8 && *q && *q != '\n' && *q != '\r') { char *e; int sd = strtol(q, &e, 10); if (e == q) break; q = e; lgSd[nlg] = sd; lgV[nlg++] = strtod(q, &q); } continue; }
         t->time = strtol(q, &q, 10); t->n = strtol(q, &q, 10); if (t->n > MAXY) t->n = MAXY;
         for (int i = 0; i < t->n; i++) t->y[i] = strtod(q, &q);
         t->np = strtol(q, &q, 10); if (t->np > 8) t->np = 8;
@@ -149,10 +152,10 @@ static void loadLasers(void) {   /* lines: P time n y.. np (startDistance weight
 
 static float patWeight(const Pat *t, int dist) { float w = 0; for (int i = 0; i < t->np; i++) if (t->sd[i] <= dist) w = t->w[i]; return w; }
 
-static int spawnWait(int dist) {   /* LevelPacing.xml MIN/MAX_SPAWN_INTERVAL by distance (units taken as game px: x1.5 to our px, /4 px per frame); applied between laser patterns */
+static float spawnGap(int dist) {   /* LevelPacing.xml MIN/MAX_SPAWN_INTERVAL by distance: game px of travel between spawn events (x1.5 to our px) */
     static const short mn[16] = {280, 250, 220, 200, 200, 200, 200, 200, 190, 190, 180, 180, 170, 170, 160, 150}, mx[16] = {470, 420, 390, 350, 320, 280, 275, 270, 265, 260, 255, 250, 245, 240, 235, 230};
     int k = dist < 2500 ? 0 : (dist - 2500) / 500 + 1; if (k > 15) k = 15;
-    return (int)((mn[k] + rand() % (mx[k] - mn[k] + 1)) * 1.5f / 4);
+    return (mn[k] + (mx[k] - mn[k]) * (rand() / (RAND_MAX + 1.f))) * 1.5f;
 }
 static int pickPattern(int dist) {   /* weighted by the game's own distance-based probabilities */
     float tot = 0; for (int i = 0; i < npat; i++) tot += patWeight(&pats[i], dist);
@@ -514,6 +517,7 @@ int main(int argc, char **argv) {
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
+    float evAt = -1; int evL = 0, evM = 0, evZ = 0;   /* spawn events (Level::SetupNextSpawner): one roll picks a coin pattern, laser, missile or gate */
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
@@ -597,7 +601,7 @@ int main(int argc, char **argv) {
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; slowT = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; evAt = -1; evL = evM = evZ = 0; dead = 0; mech = 0; inv = 0; slowT = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
               if (next500) { next500 = 0; scroll = 500 * 27.f; inv = 120; }   /* a Final Spin win: Start 500 m, for the next run */
               if (fromMenu && gHS > 0) { gHS--; scroll = 750 * 27.f; inv = 120; writeSave(best, total); missionEvent(M_USEHS, 1); }   /* Head Start: skip the first 750 m (the item text); 2 s of cover is mine */
               int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
@@ -647,7 +651,7 @@ int main(int argc, char **argv) {
 #ifdef AUTOTEST
         if (AUTOTEST != 2 && !mech && DIST(scroll) == 100) { mech = 2; vt = haveV[lvl % 13] ? lvl % 13 : 0; gd = 1; tt = 0; }   /* test build: start on the Mech */
 #endif
-        if (mpick > -900) { mpick -= 4; if (mpick < -100) { mpick = -999; mkwait = gXR ? 450 : 900; }
+        if (mpick > -900) { mpick -= spd; if (mpick < -100) { mpick = -999; mkwait = gXR ? 450 : 900; }
             else if (!mech && mpick < 140 && mpick + 80 > 60 && y > H - 220) { mech = 2; mpick = -999; gd = 1; tt = 0; runVeh++; if (vt < 5) vColT[vt]++; sfx_play(sVm[vt], 0); } }
         if (y < 60) { y = 60; vy = 0; }
         if (y > H - 120) { y = H - 120; vy = 0; }   /* ceiling / floor */
@@ -681,7 +685,21 @@ int main(int argc, char **argv) {
             missionCheck(0, dist, score, runTok, runVeh, runFlip, DIST(footPx), DIST(roofPx), DIST(vehPx), 0, runNearM, runNearZ, runHi5, runAlarm); }
         /* settings.xml DISTANCE_DIVISOR 18, scroll in game px (ours / 1.5): about 9 m per second at 4 px per frame */
         if (!dead) {
-            if (cur < 0) { if (--wait <= 0) { cur = pickPattern(dist); ptick = 0; wait = spawnWait(dist); } }
+            if (evAt < 0) evAt = scroll + 400;
+            if (scroll >= evAt) {   /* Level::SetupNextSpawner: one weighted roll; the next event comes MIN..MAX_SPAWN_INTERVAL later plus the extent of what was spawned */
+                static const float coinV[12] = {4, 4, 4, 4, 4, 9, 9, 4, 4, 4, 4, 30};   /* Configs/coins_patterns/Streaks_*Coins: global chance while riding */
+                int riding = mech == 2 && vt >= 0 && vt < 12;
+                float wc = riding ? coinV[vt] : (dist >= 50 ? 14.f : 0.f), wm = dist >= mStart ? mProb : 0, wg = dist >= zGlobalSd ? zGlobalP : 0;
+                float wl = (!riding && boostPx <= 0 && zi < 0 && mst == 0 && cur < 0) ? laserProb(dist) : 0, tot = wc + wl + wm + wg, ext = 0;
+                evL = evM = evZ = 0;
+                if (tot > 0) { float r = tot * (rand() / (RAND_MAX + 1.f));
+                    if (r < wc) PKLOG("event coin dist %d", dist);
+                    else if (r < wc + wl) { evL = 1; ext = 240; PKLOG("event laser dist %d", dist); }
+                    else if (r < wc + wl + wm) { evM = 1; ext = 150; PKLOG("event missile dist %d", dist); }
+                    else { evZ = 1; ext = 150; PKLOG("event gate dist %d", dist); } }
+                evAt = scroll + spawnGap(dist) + ext * spd;
+            }
+            if (cur < 0) { if (evL) { evL = 0; cur = pickPattern(dist); ptick = 0; } }
             else if (++ptick > pats[cur].time + 60) cur = -1;
             if (cur >= 0 && ptick > 60) for (int i = 0; i < pats[cur].n; i++) {
                 float ly = 240 - pats[cur].y[i] * 1.6f;
@@ -689,7 +707,7 @@ int main(int argc, char **argv) {
             }
         }
         if (!dead && cur < 0) {   /* missiles share the screen with lasers only when no laser pattern is active */
-            if (mst == 0 && dist >= mStart && --mwait <= 0) { mwait = 120; if (rand() % 100 < mProb) { mst = 1; mtick = 0; my = y + 45; } }
+            if (mst == 0 && evM) { evM = 0; mst = 1; mtick = 0; my = y + 45; }
             else if (mst == 1) { float t = y + 45; my += fminf(fmaxf(t - my, -mChase * 2), mChase * 2); if (++mtick > 90) { mst = 2; mx = W; mNearMin = 999; } }
         }
         if (haveTok && !dead && state == 1) {
@@ -700,7 +718,7 @@ int main(int argc, char **argv) {
                 if (rand() % 1000 < 28 || dist - tokLast >= 1050 || !tokLast) { tokOn = 1; tokLast = dist; tokInKm++; tokX = W + 40; tokY = tokTY = 120 + rand() % (H - 300); } }
             if (tokOn && !gTM) { if (fabsf(tokTY - tokY) < 1) tokTY = 120 + rand() % (H - 300); tokY += fmaxf(-2.7f, fminf(2.7f, tokTY - tokY)); }
             if (tokOn) {
-                tokX -= 4;
+                tokX -= spd;
                 if (gTM && hypotf(tokX - 95, tokY - (y + 45)) < 200) { tokX += (95 - tokX) * 0.12f; tokY += (y + 45 - tokY) * 0.12f; }   /* Token Magnet pulls it in */
                 if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; runTok++; if (gBM) scroll += 270; sfx_play(sC3, 0); }   /* Boost Machine: a token also carries you 10 m ahead (my reading) */
                 else if (tokX < -60) tokOn = 0;
@@ -791,9 +809,9 @@ int main(int argc, char **argv) {
         }
         if (!dead) {
             { int ns = (mech == 2 && vt >= 0 && vt < 12 && nzpS[1 + vt]) ? 1 + vt : 0; if (ns != zset) { zset = ns; zi = -1; PKLOG("zapper set %d patterns %d missile %d%% from %d", zset, nzp, (int)mProb, mStart); } }   /* riding: that vehicle's own obstacle file */
-            if (zi < 0) { if (dist >= zGlobalSd && --zwait <= 0) { zwait = 150; if (rand() % 100 < zGlobalP) { zi = pickZapper(dist, cur >= 0); if (zi >= 0) { zDud = zapDudLeft > 0 ? (zapDudLeft--, 1) : 0; ztick = 0; zNearMin = 999; zHitF = 0; sfx_play(sZap, 0); zx = W + 100; zlen = zp[zi].minL + (zp[zi].maxL - zp[zi].minL) * (rand() / (RAND_MAX + 1.f)); zy = 90 + rand() % 220; } } } }
+            if (zi < 0) { if (evZ) { evZ = 0; { zi = pickZapper(dist, cur >= 0); if (zi >= 0) { zDud = zapDudLeft > 0 ? (zapDudLeft--, 1) : 0; ztick = 0; zNearMin = 999; zHitF = 0; sfx_play(sZap, 0); zx = W + 100; zlen = zp[zi].minL + (zp[zi].maxL - zp[zi].minL) * (rand() / (RAND_MAX + 1.f)); zy = 90 + rand() % 220; } } } }
             else {
-                ztick++; zx -= 4;
+                ztick++; zx -= spd;
                 ZPat *z = &zp[zi]; int period = z->on + z->off; int lethal = period <= 1 || (ztick % period) < z->on;
                 float ang = z->startAngle + (z->rotT ? (z->cw ? 1 : -1) * 360.f * ztick / z->rotT : 0);
                 float hx = cosf(ang * 0.0174533f) * zlen / 2, hy = sinf(ang * 0.0174533f) * zlen / 2;
