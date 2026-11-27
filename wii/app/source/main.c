@@ -535,7 +535,7 @@ int main(int argc, char **argv) {
     int jetV = -1, prevCur = -1, prevMst = 0;
     Spr bolt = {0}; if (!loadSpr(&bolt, "bolt.spr")) fallbackSpr(&bolt);
     int zi = -1, ztick = 0, zwait = 150; float zx = 0, zy = 0, zlen = 0;
-    int rideD0 = 0, cvOn = 0; float evAt = -1; int evL = 0, evM = 0, evZ = 0;   /* spawn events (Level::SetupNextSpawner): one roll picks a coin pattern, laser, missile or gate */
+    int rideD0 = 0, cvOn = 0, slowTick = 0; float evAt = -1; int evL = 0, evM = 0, evZ = 0;   /* spawn events (Level::SetupNextSpawner): one roll picks a coin pattern, laser, missile or gate */
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!ntm) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
@@ -588,6 +588,10 @@ int main(int argc, char **argv) {
             u32 bd = btnDown(); if ((bd & WPAD_BUTTON_LEFT) && psel > 0) psel--; if ((bd & WPAD_BUTTON_RIGHT) && psel < 2) psel++;
             if (bd & (WPAD_BUTTON_A | WPAD_BUTTON_2)) { if (psel == 2) paused = 0; else if (psel == 1) { paused = 0; state = 2; doRestart = 1; } else { paused = 0; state = 0; cst = 0; boomOn = 0; mech = 0; mst = 0; cur = -1; zi = -1; tokOn = 0; pigOn = 0; memset(sci, 0, sizeof sci); mpick = -999; dead = 0; y = 300; vy = 0; } }
         }
+#if AUTOTEST
+        { static int st = 0; if (!st && state == 1 && DIST(scroll) >= 150) { st = 1; slowT = 420; PKLOG("slowmo start dist %d frame %d", DIST(scroll), frame); } if (st == 1 && !slowT) { st = 2; PKLOG("slowmo end dist %d frame %d", DIST(scroll), frame); } }
+#endif
+        if (slowT > 0 && state == 1 && !paused && !dead && (++slowTick & 1)) { slowT--; dist = DIST(scroll); goto render; }   /* Slow Motion: time multiplier 0.5 = the whole world updates every other frame */
         if (paused && state == 1) { dist = DIST(scroll); if (jetV > 0) { sfx_stop(jetV); jetV = -1; } goto render; }
         if (state != 1) { paused = 0;
             u32 td = btnDown();
@@ -640,7 +644,7 @@ int main(int argc, char **argv) {
           if (wasMech && mech != 2 && cvOn) { cvOn = 0; loadPattern("pattern.txt"); }
           wasMech = mech == 2; spd = curU * 1.5f / 60.f; }
         if (boostPx > 0) { float full = 2000.f * 1.5f / 60.f; spd = boostPx > 810 ? full : spd + (full - spd) * boostPx / 810.f; boostPx -= spd; inv = inv > 2 ? inv : 2; }
-        if (slowT > 0) { slowT--; spd *= 0.5f; }
+        if (slowT > 0) slowT--;
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
           if (mech == 2 && vt == 4) {   /* Teleporter: hovers; a press vanishes (invulnerable) and reappears at a random height */
               vy = 0;

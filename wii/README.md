@@ -588,3 +588,6 @@ Coins are no longer one looping preloaded field. `pattern.txt` is parsed into te
 
 ### Vehicle coin sets
 `tools/mkcoinset.py` converts `Configs/coins_patterns/Streaks_<V>Coins_1.json` into `cv<N>.txt` (per-pattern weights with startDistance steps in metres ridden, plus TopHalfWeight/BottomHalfWeight for the spawn height). The app loads `cv<N>.txt` on mount and the standard set again after the ride. Standard-set weights are uniform (5), so only vehicle sets are weighted. HOG, CFT and SAM have no coin config in the shipped files and use the standard set. Verified to load without errors in headless Dolphin; a later run logged coin events during a ride using the vehicle set (`cv 1`).
+
+### Slow Motion is now a real time scale
+The pickup (7 s, multiplier 0.5) now skips the whole world update on every other frame, so Barry, obstacles, missiles and scrolling all run at half speed (reusing the pause path to render without updating). The 7 s countdown is real time. The test build forces it once; the log showed 210 game frames over the 420 real frames of the effect (`slowmo start/end` lines). Sound and animation tied to `frame` slow down with it.
