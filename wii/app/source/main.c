@@ -397,7 +397,10 @@ static const char *const mName[M_N] = {"PLAY_GAME", "COINS_NOT_COLLECT", "VEHICL
     "FLY_DIST", "FLY_NO_VEHICLE", "FLY_DIST_TOTAL", "CHANGE_GRAVITY", "RUN_DISTANCE", "RUN_DISTANCE_TOTAL", "RUB_HEAD_DISTANCE", "RUB_HEAD_DISTANCE_TOTAL", "VEHICLE_FLY_TOTAL_ANY", "CLOSE_CALL", "CLOSE_CALL_TOTAL", "SCIENTISTS_HIGH_FIVE", "SCIENTISTS_HIGH_FIVE_TOTAL", "SLOTS_CASH_IN", "SLOTS_WIN_TOTAL", "TOUCH_ALARM", "TOUCH_ALARM_TOTAL", "VEHICLE_COLLECT", "VEHICLE_DISTANCE", "VEHICLE_FLY_TOTAL", "SCIENTISTS_KNOCK_OVER", "SLIDE_DIST_TOTAL", "START_FROM_MENU", "USE_ITEM_PERK", "USE_ITEM_HEADSTART", "USE_ITEM_BOMB"};
 #define MAXM 64
 static int nmis, mType[MAXM], mP1[MAXM], mP2[MAXM], mDiff[MAXM], mStars, mRank, nRanks; static char rankName[16][24];
-#define STARS_PER_RANK 10   /* mine: the game keeps its star and rank rules in native code */
+/* Configs/mission_system/mission_level_system_1.json: 15 levels, each with the stars needed to advance and the coins paid for it */
+static const int rankStars[15] = {3, 3, 3, 5, 5, 7, 7, 7, 9, 9, 11, 11, 11, 13, 13};
+static const int rankCoins[15] = {400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800, 5200, 5600, 6000};
+#define STARS_PER_RANK (mRank < 15 ? rankStars[mRank] : 99)
 static int mAct[3] = {0, 1, 2}, mProg[3], mNext = 3, mDone, mBanner; static char mText[MAXM][64], mBannerText[64];
 static int vColT[5], vKoT[5]; static float vPxT[5];   /* this run, per named vehicle (0 Mech, 1 Hog, 2 Bird, 3 Gravity Suit, 4 Teleporter): pickups, staff knocked down, px travelled */
 static int mTotal(int t) { return t == M_PLAY || t == M_VEHANY || t == M_TOKT || t == M_COINT || t == M_SPEND || t == M_DISTT || t == M_RUNT || t == M_RUBT || t == M_VEHDT || t == M_NEART || t == M_HI5T || t == M_SLOTC || t == M_SLOTW || t == M_ALARMT || t == M_VCOL || t == M_VDT || t == M_KOV || t == M_SLIDET || t == M_START || t == M_USEP || t == M_USEHS || t == M_USEFB; }
@@ -424,7 +427,7 @@ static int mRankCoins, mRankUp;   /* coins owed for a rank-up (main adds them to
 static void missionDone(int s) {
     snprintf(mBannerText, sizeof mBannerText, "%s", mText[mAct[s]]); mBanner = 180; mDone++;
     mStars += mDiff[mAct[s]];   /* stars = the mission's DIFFICULTY (mine) */
-    while (mStars >= STARS_PER_RANK && mRank < 15) { mStars -= STARS_PER_RANK; mRank++; mRankCoins += 250 * mRank; mRankUp = 180; }   /* rank-up pays 250 x the new rank (mine) */
+    while (mRank < 15 && mStars >= STARS_PER_RANK) { mStars -= STARS_PER_RANK; mRankCoins += rankCoins[mRank]; PKLOG("rank up from %d paid %d stars left %d", mRank + 1, rankCoins[mRank], mStars); mRank++; mRankUp = 180; }   /* the stars and coins of the level just finished, from mission_level_system_1.json */
     for (int k = 0; k < nmis; k++) { int c = (mNext + k) % nmis; if (c != mAct[0] && c != mAct[1] && c != mAct[2]) { mAct[s] = c; mNext = (c + 1) % nmis; break; } }
     mProg[s] = 0; saveMissions();
 }
@@ -518,8 +521,8 @@ int main(int argc, char **argv) {
     loadSave(&best, &total); loadGadgets(dir);
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
-    mStars = STARS_PER_RANK - 1;   /* and one star short of a rank, so the rank-up runs */
     mRank = 4;   /* mission level 5, which is what unlocks the Slow Motion pickup */
+    mStars = STARS_PER_RANK - 1;   /* and one star short of a rank, so the rank-up runs */
     for (int i = 0, k = 0; i < nmis && k < 2; i++) if (mType[i] == (k ? M_TOKG : M_COING)) { mAct[k++] = i; i = -1; }
 #else
     loadMissions(1);
