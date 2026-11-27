@@ -504,7 +504,7 @@ int main(int argc, char **argv) {
     /* in-run pickups, Configs/pickups: manager_1 (first at 300 m, then every 500 m + 0-500 random, equal weights 25), level 1 of each:
        Shield numHits 1; Boost 100 m at speed 2000 (slowing over the last 30 m); Coin Special 300 coins over 60 m. Slow Motion (mission level 5+): 7 s at time multiplier 0.5, applied here to the run speed only. */
     Spr pkS[4] = {{0}}; int havePk = loadSpr(&pkS[0], "pkcoin.spr") && loadSpr(&pkS[1], "pkboost.spr") && loadSpr(&pkS[2], "pkshield.spr") && loadSpr(&pkS[3], "pkslow.spr"), pkOn = 0, pkKind = 0, pkNext = PKFIRST, shield = 0, slowT = 0; float pkX = 0, pkY = 0, boostPx = 0, cspPx = 0, cspAcc = 0;
-    Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0, tokFirst = 300, tokLast = 0, tokKm = 0, tokInKm = 0, tokStep = 0, spinsLeft = 0, spinAnim = 0, spinShow = 0, spinPrize = 0, spinWins = 0; float tokX = 0, tokY = 0, tokTY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
+    Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0, tokFirst = 300, tokLast = 0, tokKm = 0, tokInKm = 0, tokStep = 0, spinsLeft = 0, spinAnim = 0, spinShow = 0, spinPrize = 0, spinWins = 0, next500 = 0; const char *spinLbl = ""; float tokX = 0, tokY = 0, tokTY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
     Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
     Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, zDud = 0, zapDudLeft = 0, bossHp = 3, bossCd = 0, bossKills = 0, boomDone = 0, boomHit = 0, newBest = 0;
     Spr pigS = {0}; int havePig = loadSpr(&pigS, "pig.spr"), pigOn = 0, pigWait = 1200, pigGot = 0, pigFirst = 300, pigLast = 0, pigKm = 0, pigInKm = 0, pigStep = 0; float pigX = 0, pigY = 0, pigTY = 0;   /* Flying Pig: Entities/distanceMarkerPig (rows 3-4 = flying frames); when and what it pays is mine */
@@ -550,9 +550,14 @@ int main(int argc, char **argv) {
             }
             if (state == 2 && (spinsLeft || spinAnim || spinShow)) {   /* Final Spin: one spin per token; the prize table is mine (the game's is in native code) */
                 if (spinAnim) { if (--spinAnim == 0) {
-                    int r = rand() % 100; spinPrize = r < 50 ? 0 : r < 75 ? 100 : r < 90 ? 250 : r < 98 ? 500 : 1000;
-                    if (gLT && !spinsLeft && spinPrize < 250) spinPrize = 250;   /* Lucky Last: the last spin always wins */
-                    total += spinPrize; spinWins += spinPrize > 0; writeSave(best, total); missionSlot(spinPrize > 0); spinShow = 75; sfx_play(spinPrize ? sC3 : sJE, 0); } }
+                    /* Configs/slots/default_1.json: weighted outcomes; coin prizes pay `rewards` 200 / 1000 / 2000; three explosions are the near misses */
+                    static const int sw[11] = {120, 90, 50, 120, 75, 40, 100, 70, 120, 100, 100};   /* COINS_100/500/1000, EXPLOSION1-3, REVIVE, TOKENS, DOUBLE_COINS, START_500M x2 */
+                    int r = rand() % 985, k = 0; while (r >= sw[k]) r -= sw[k++];
+                    if (gLT && !spinsLeft && k >= 3 && k <= 6) k = 0;   /* Lucky Last: the last spin always wins (at least 200 here) */
+                    spinPrize = k == 0 ? 200 : k == 1 ? 1000 : k == 2 ? 2000 : k == 8 ? score : 0;
+                    spinLbl = k == 0 ? "200 COINS" : k == 1 ? "1000 COINS" : k == 2 ? "2000 COINS" : k <= 5 ? "BOOM" : k == 6 ? "REVIVE" : k == 7 ? "EXTRA TOKEN" : k == 8 ? "DOUBLE COINS" : "START 500M";
+                    if (k == 7) spinsLeft++; if (k >= 9) next500 = 1;   /* an extra spin; the next run starts at 500 m */
+                    total += spinPrize; spinWins += k < 3 || k >= 7; PKLOG("spin kind %d prize %d next500 %d", k, spinPrize, next500); writeSave(best, total); missionSlot(k < 3 || k >= 7); spinShow = 75; sfx_play(k < 3 || k >= 7 ? sC3 : sJE, 0); } }
                 else if (spinShow) spinShow--;
                 if (!spinAnim && spinsLeft && frame - goFrame >= 45 && (!spinShow || spinShow < 45) && (td & (WPAD_BUTTON_A | WPAD_BUTTON_2)
 #ifdef AUTOTEST
@@ -568,6 +573,7 @@ int main(int argc, char **argv) {
             nextBoss = 1500;
 #endif
             cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; slowT = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
+              if (next500) { next500 = 0; scroll = 500 * 27.f; inv = 120; }   /* a Final Spin win: Start 500 m, for the next run */
               if (fromMenu && gHS > 0) { gHS--; scroll = 750 * 27.f; inv = 120; writeSave(best, total); missionEvent(M_USEHS, 1); }   /* Head Start: skip the first 750 m (the item text); 2 s of cover is mine */
               int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
 #if AUTOTEST == 2
@@ -869,7 +875,7 @@ int main(int argc, char **argv) {
                 static const int pz[5] = {0, 100, 250, 500, 1000};
                 drawText(30, 90, 0.6f, "FINAL SPIN");
                 for (int k = 0; k < 3; k++) { snprintf(t, sizeof t, "%d", spinAnim ? pz[(frame / 3 + k * 2) % 5] : spinPrize); drawText(40 + k * 90, 125, 1.1f, t); }
-                if (!spinAnim && spinShow) drawText(30, 200, 0.7f, spinPrize ? "YOU WON" : "NO PRIZE");
+                if (!spinAnim && spinShow) { drawText(30, 200, 0.7f, spinLbl[0] ? spinLbl : "NO PRIZE"); }
                 snprintf(t, sizeof t, "TOKENS LEFT %d", spinsLeft); drawText(30, 250, 0.6f, t);
             } else
             if (state == 2) {   /* layout follows ResultsScreen_New: a distance box, then a collected row */
