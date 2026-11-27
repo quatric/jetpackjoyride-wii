@@ -516,3 +516,7 @@ Results panel: the decoded `ResultsScreen_New` overview lists distance, what was
 ## Results screen layout
 
 The game-over screen now follows the decoded `ResultsScreen_New`: two halves of the 960-wide screen, `LeftSide` (the overview panel: distance, best, collected, totals) and `rightSide` (coin balance at the top, the play-again button at the bottom). Panel art is `popupBacking` for both; the real one uses its own backing sprites, and the leaderboards, missions tab, profile block and social buttons are not drawn. The text is mine, positions scaled by eye. Checked in the Dolphin AUTOTEST run.
+
+## Pause header
+
+`Pause.uiscreen` puts a 128-high header (`PauseHeaderBacking`: three `menus/paused/titleBar` pieces, left/middle/right) across the top with the title "PAUSED" in the middle, the score and gadgets on the left and buttons on the right. The pause screen now draws the three pieces and moves "PAUSED" into the bar. The score/gadgets/buttons are not moved into it, the dim backing (`black.tex`) is not drawn, and the HUD text still overlaps the bar's left end. Checked in Dolphin.

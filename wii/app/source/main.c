@@ -476,6 +476,7 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
+    Spr tbS = {0}; int haveTb = loadSpr(&tbS, "tb.spr");   /* Pause.uiscreen PauseHeaderBacking: textures/menus/paused/titleBar, 128 high across the top */
     Spr hazS = {0}; int haveHaz = loadSpr(&hazS, "hz.spr");   /* TitleScreen mainMenu.hazzardStrip: textures/menus/backings/hazzardTile */
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");
     Spr titleS = {0}; int haveTitle = loadSpr(&titleS, "title.spr");   /* the lab room behind the title (Room0/bgTitle) */   /* title art: textures/logo/default (downscaled to fit) */
@@ -855,13 +856,14 @@ int main(int argc, char **argv) {
             } else if ((frame / 30) & 1) { if (state == 2 && !spinning) { quad(&pbk, 340, 380, 280, 80, 0, 0, 1, 1); } } drawText(state == 2 ? 372 : W / 2 - 170, state == 2 ? 410 : 300, state == 2 ? 0.7f : 0.9f, spinning ? (spinsLeft && !spinAnim ? "PRESS A TO SPIN" : "") : "A  PLAY AGAIN");
         }
         if (paused && havePause) {
+            if (haveTb) for (int k = 0; k < 3; k++) quad(&tbS, k * W / 3.f, 0, W / 3.f + 1, 96, 0, 0, 1, 1);
             static const char *const lab[3] = {"QUIT", "RETRY", "RESUME"};
             for (int i = 0; i < 3; i++) {
                 float cx = W / 2 + (i - 1) * 150, cy = 240, bs = i == psel ? 140 : 130;
                 quad(&pbk, cx - bs / 2, cy - bs / 2, bs, bs, 0, 0, 1, 1); quad(&pic[i], cx - 38, cy - 38 - 12, 77, 77, 0, 0, 1, 1);
                 drawText(cx - strlen(lab[i]) * 10.5f, cy + 24, 0.6f, lab[i]);
             }
-            drawText(W / 2 - 110, 130, 1.2f, "PAUSED");
+            drawText(W / 2 - 110, haveTb ? 34 : 130, 1.2f, "PAUSED");
         } else if (paused) drawText(W / 2 - 110, 200, 1.2f, "PAUSED");
         if (blastWait > 0 && state == 1) { char bl[48]; snprintf(bl, sizeof bl, "PRESS A TO BLAST   %d LEFT", gFB); if ((frame / 10) & 1) drawText(W / 2 - 190, 200, 0.8f, bl); }
         if (blastFx > 0 && haveCol) { blastFx--; quad(&boomS, 40, y - 10, 160, 110, 1, 0, 0, 1); }
