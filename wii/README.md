@@ -512,3 +512,7 @@ Results panel: the decoded `ResultsScreen_New` overview lists distance, what was
 ## Title menu from the decoded TitleScreen
 
 `tools/uidecode.py` decodes every `.uiscreen` (all 471 complete); its `__main__` block ran before `events` was defined, so running it as a script crashed - fixed. `TitleScreen_SplitTest` has 1598 components. Its `mainMenu` is a 310-wide panel at x -450 from the centre of the 960x640 screen (the left side), with a `hazzardStrip` of `textures/menus/backings/hazzardTile` (tiled 128 px tile) behind the START and SHOP buttons. The Wii title now draws that panel and puts START and SHOP in it, with the logo and Barry to its right over the lab room. Positions are scaled by eye to 640x480 rather than computed: there is no docking/layout engine yet, so the gradient overlays, rim light, events, rewards and settings buttons are not drawn. Checked in Dolphin.
+
+## Results screen layout
+
+The game-over screen now follows the decoded `ResultsScreen_New`: two halves of the 960-wide screen, `LeftSide` (the overview panel: distance, best, collected, totals) and `rightSide` (coin balance at the top, the play-again button at the bottom). Panel art is `popupBacking` for both; the real one uses its own backing sprites, and the leaderboards, missions tab, profile block and social buttons are not drawn. The text is mine, positions scaled by eye. Checked in the Dolphin AUTOTEST run.

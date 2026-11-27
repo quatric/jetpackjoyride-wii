@@ -820,25 +820,25 @@ int main(int argc, char **argv) {
             if (state == 0) { snprintf(t, sizeof t, "BEST %dM   COINS %d", best, total); drawText(270, 424, 0.6f, t);
                 if (nmis && !inShop) { snprintf(t, sizeof t, "RANK %d %s   %d OF %d STARS", mRank + 1, nRanks ? rankName[mRank % nRanks] : "", mStars, STARS_PER_RANK); drawText(270, 448, 0.45f, t); } }
             int spinning = state == 2 && (spinsLeft || spinAnim || spinShow);
-            if (state == 2 && havePop) quad(&popS, 70, 100, 500, 250, 0, 0, 1, 1);
+            if (state == 2 && havePop) { quad(&popS, 6, 14, 308, 452, 0, 0, 1, 1); quad(&popS, 326, 14, 308, 78, 0, 0, 1, 1); }   /* ResultsScreen_New: LeftSide (overview panel) and rightSide (profile/coin balance), each 480 of 960 wide */
             if (state == 0 && haveHaz) for (float ty = 0; ty < H; ty += 96) for (float tx = 22; tx < 254; tx += 86) { float fw = 254 - tx < 86 ? 254 - tx : 86, fh = H - ty < 96 ? H - ty : 96; quad(&hazS, tx, ty, fw, fh, 0, 0, fw / 86, fh / 96); }   /* tiled; the tile is 128 px */   /* mainMenu is 310 wide at x -450 from the centre of the 960x640 screen: the left panel */
             if (state == 0 && haveLogo) {
                 quad(&logoT, 270, 20, 360 * 0.95f, 218 * 0.95f, 0, 0, 360.f / 360, 218.f / 220);
                 quad(&logoB, 400, 230, 192 * 0.8f, 270 * 0.8f, 0, 0, 192.f / 192, 270.f / 272);
-            } else drawText(W / 2 - 230, 120, 1.4f, state == 0 ? "JETPACK JOYRIDE" : "GAME OVER");
+            } else if (state == 0) drawText(W / 2 - 230, 120, 1.4f, "JETPACK JOYRIDE"); else drawText(340, 140, 1.0f, "GAME OVER");
             if (spinning) {
                 static const int pz[5] = {0, 100, 250, 500, 1000};
-                drawText(95, 175, 0.6f, "FINAL SPIN");
-                for (int k = 0; k < 3; k++) { snprintf(t, sizeof t, "%d", spinAnim ? pz[(frame / 3 + k * 2) % 5] : spinPrize); drawText(110 + k * 140, 200, 1.1f, t); }
-                if (!spinAnim && spinShow) drawText(95, 262, 0.7f, spinPrize ? "YOU WON" : "NO PRIZE");
-                snprintf(t, sizeof t, "TOKENS LEFT %d", spinsLeft); drawText(95, 302, 0.6f, t);
+                drawText(30, 90, 0.6f, "FINAL SPIN");
+                for (int k = 0; k < 3; k++) { snprintf(t, sizeof t, "%d", spinAnim ? pz[(frame / 3 + k * 2) % 5] : spinPrize); drawText(40 + k * 90, 125, 1.1f, t); }
+                if (!spinAnim && spinShow) drawText(30, 200, 0.7f, spinPrize ? "YOU WON" : "NO PRIZE");
+                snprintf(t, sizeof t, "TOKENS LEFT %d", spinsLeft); drawText(30, 250, 0.6f, t);
             } else
             if (state == 2) {   /* layout follows ResultsScreen_New: a distance box, then a collected row */
-                drawText(95, 175, 0.6f, "DISTANCE"); snprintf(t, sizeof t, "%dM", lastDist); drawText(95, 195, 1.3f, t);
-                snprintf(t, sizeof t, "BEST %dM", best); drawText(350, 203, 0.7f, t);
-                drawText(95, 262, 0.7f, "COLLECTED"); snprintf(t, sizeof t, "%d COINS  %d TOKENS", score, runTok); drawText(300, 262, 0.6f, t);
-                { int ng = 0; for (int g = 0; g < NSHOP; g++) ng += *shopOwn[g]; snprintf(t, sizeof t, "TOTAL %d   GADGETS %d", total, ng); drawText(95, 302, 0.6f, t); }   /* the real overview also lists collected tokens and the gadgets used ("assists") */
-                if (newBest && ((frame / 20) & 1)) drawText(W / 2 - 110, 360, 0.9f, "NEW BEST!");
+                drawText(30, 90, 0.6f, "DISTANCE"); snprintf(t, sizeof t, "%dM", lastDist); drawText(30, 112, 1.3f, t);
+                snprintf(t, sizeof t, "BEST %dM", best); drawText(30, 165, 0.7f, t);
+                drawText(30, 215, 0.7f, "COLLECTED"); snprintf(t, sizeof t, "%d COINS  %d TOKENS", score, runTok); drawText(30, 243, 0.6f, t);
+                { int ng = 0; for (int g = 0; g < NSHOP; g++) ng += *shopOwn[g]; snprintf(t, sizeof t, "TOTAL %d   GADGETS %d", total, ng); drawText(30, 290, 0.6f, t); snprintf(t, sizeof t, "COINS %d", total); drawText(344, 44, 0.8f, t); }   /* the real overview also lists collected tokens and the gadgets used ("assists") */
+                if (newBest && ((frame / 20) & 1)) drawText(30, 340, 0.9f, "NEW BEST!");
             }
             if (state == 0 && havePause && haveStart) {   /* TitleScreen buttons.startPressed: 332x96 buttonBacking, glow bar at -144, "START" at +38; drawn at 0.75 */
                 float cx = 138, cy = 300, bw = 332 * 0.65f, bh = 96 * 0.65f; quad(&pbk, cx - bw / 2, cy - bh / 2, bw, bh, 0, 0, 1, 1); quad(&startG, cx - 144 * 0.65f - 20, cy - 40, 40, 80, 0, 0, 1, 1);
@@ -852,7 +852,7 @@ int main(int argc, char **argv) {
                         snprintf(t, sizeof t, "YOU HAVE %d   B TO GO BACK", total); drawText(150, 362, 0.6f, t);
                     }
                 }
-            } else if ((frame / 30) & 1) drawText(W / 2 - 170, state == 2 ? 400 : 300, 0.9f, spinning ? (spinsLeft && !spinAnim ? "PRESS A TO SPIN" : "") : "PRESS A TO START");
+            } else if ((frame / 30) & 1) { if (state == 2 && !spinning) { quad(&pbk, 340, 380, 280, 80, 0, 0, 1, 1); } } drawText(state == 2 ? 372 : W / 2 - 170, state == 2 ? 410 : 300, state == 2 ? 0.7f : 0.9f, spinning ? (spinsLeft && !spinAnim ? "PRESS A TO SPIN" : "") : "A  PLAY AGAIN");
         }
         if (paused && havePause) {
             static const char *const lab[3] = {"QUIT", "RETRY", "RESUME"};
