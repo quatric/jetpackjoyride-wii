@@ -502,8 +502,8 @@ int main(int argc, char **argv) {
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr popS = {0}; int havePop = loadSpr(&popS, "popup.spr");   /* menus/popupBacking behind the game-over text */
     /* in-run pickups, Configs/pickups: manager_1 (first at 300 m, then every 500 m + 0-500 random, equal weights 25), level 1 of each:
-       Shield numHits 1; Boost 100 m at speed 2000 (slowing over the last 30 m); Coin Special 300 coins over 60 m. Slow Motion needs mission level 5 and is not done. */
-    Spr pkS[3] = {{0}}; int havePk = loadSpr(&pkS[0], "pkcoin.spr") && loadSpr(&pkS[1], "pkboost.spr") && loadSpr(&pkS[2], "pkshield.spr"), pkOn = 0, pkKind = 0, pkNext = PKFIRST, shield = 0; float pkX = 0, pkY = 0, boostPx = 0, cspPx = 0, cspAcc = 0;
+       Shield numHits 1; Boost 100 m at speed 2000 (slowing over the last 30 m); Coin Special 300 coins over 60 m. Slow Motion (mission level 5+): 7 s at time multiplier 0.5, applied here to the run speed only. */
+    Spr pkS[4] = {{0}}; int havePk = loadSpr(&pkS[0], "pkcoin.spr") && loadSpr(&pkS[1], "pkboost.spr") && loadSpr(&pkS[2], "pkshield.spr") && loadSpr(&pkS[3], "pkslow.spr"), pkOn = 0, pkKind = 0, pkNext = PKFIRST, shield = 0, slowT = 0; float pkX = 0, pkY = 0, boostPx = 0, cspPx = 0, cspAcc = 0;
     Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0, tokFirst = 300, tokLast = 0, tokKm = 0, tokInKm = 0, tokStep = 0, spinsLeft = 0, spinAnim = 0, spinShow = 0, spinPrize = 0, spinWins = 0; float tokX = 0, tokY = 0, tokTY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
     Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
     Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, zDud = 0, zapDudLeft = 0, bossHp = 3, bossCd = 0, bossKills = 0, boomDone = 0, boomHit = 0, newBest = 0;
@@ -519,6 +519,7 @@ int main(int argc, char **argv) {
 #ifdef AUTOTEST
     loadMissions(0);   /* the test build starts on missions one run can finish, so completion runs */
     mStars = STARS_PER_RANK - 1;   /* and one star short of a rank, so the rank-up runs */
+    mRank = 4;   /* mission level 5, which is what unlocks the Slow Motion pickup */
     for (int i = 0, k = 0; i < nmis && k < 2; i++) if (mType[i] == (k ? M_TOKG : M_COING)) { mAct[k++] = i; i = -1; }
 #else
     loadMissions(1);
@@ -566,7 +567,7 @@ int main(int argc, char **argv) {
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; slowT = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
               if (fromMenu && gHS > 0) { gHS--; scroll = 750 * 27.f; inv = 120; writeSave(best, total); missionEvent(M_USEHS, 1); }   /* Head Start: skip the first 750 m (the item text); 2 s of cover is mine */
               int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
 #if AUTOTEST == 2
@@ -579,6 +580,7 @@ int main(int argc, char **argv) {
         }
         spd = runSpeed(dist);
         if (boostPx > 0) { float full = 2000.f * 1.5f / 60.f; spd = boostPx > 810 ? full : spd + (full - spd) * boostPx / 810.f; boostPx -= spd; inv = inv > 2 ? inv : 2; }
+        if (slowT > 0) { slowT--; spd *= 0.5f; }
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
           if (mech == 2 && vt == 4) {   /* Teleporter: hovers; a press vanishes (invulnerable) and reappears at a random height */
               vy = 0;
@@ -667,12 +669,12 @@ int main(int argc, char **argv) {
                 else if (tokX < -60) tokOn = 0;
             }
             if (havePk) {
-                if (!pkOn && dist >= pkNext) { pkOn = 1; pkKind = rand() % 3; pkX = W + 40; pkY = 120 + rand() % (H - 300); pkNext = dist + 500 + rand() % 500; PKLOG("pickup spawn kind %d dist %d next %d", pkKind, dist, pkNext); }
+                if (!pkOn && dist >= pkNext) { pkOn = 1; pkKind = rand() % (mRank + 1 >= 5 ? 4 : 3); pkX = W + 40; pkY = 120 + rand() % (H - 300); pkNext = dist + 500 + rand() % 500; PKLOG("pickup spawn kind %d dist %d next %d", pkKind, dist, pkNext); }
                 if (pkOn) {
                     pkX -= spd;
                     if (hypotf(pkX + 32 - 95, pkY + 16 - (y + 45)) < 50) {
                         pkOn = 0; sfx_play(sC3, 0);
-                        PKLOG("pickup got kind %d dist %d score %d", pkKind, dist, score); if (pkKind == 0) { cspPx = 60 * 27; cspAcc = 0; } else if (pkKind == 1) boostPx = 100 * 27; else shield = 1;
+                        PKLOG("pickup got kind %d dist %d score %d", pkKind, dist, score); if (pkKind == 0) { cspPx = 60 * 27; cspAcc = 0; } else if (pkKind == 1) boostPx = 100 * 27; else if (pkKind == 2) shield = 1; else slowT = 7 * 60;
                     } else if (pkX < -80) pkOn = 0;
                 }
                 if (cspPx > 0) { cspAcc += 300.f * spd / (60 * 27); cspPx -= spd; score += (int)cspAcc; cspAcc -= (int)cspAcc; }
