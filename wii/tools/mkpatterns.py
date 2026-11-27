@@ -4,6 +4,7 @@ usage: mkpatterns.py <assets>/patterns out/pattern.txt"""
 import sys, os, re, random
 d, out = sys.argv[1:3]
 fs = sorted((f for f in os.listdir(d) if re.fullmatch(r'coinPattern\d+\.txt', f)), key=lambda f: int(re.findall(r'\d+', f)[0]))
+fs += ['coinPatternRings.txt', 'coinPatternIHeartCoin.txt']   # CoinPatterns_1.json gives these the same weight (5) as the numbered ones
 random.Random(7).shuffle(fs)
 with open(out, 'w') as o:
     for f in fs:
