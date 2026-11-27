@@ -591,3 +591,6 @@ Coins are no longer one looping preloaded field. `pattern.txt` is parsed into te
 
 ### Slow Motion is now a real time scale
 The pickup (7 s, multiplier 0.5) now skips the whole world update on every other frame, so Barry, obstacles, missiles and scrolling all run at half speed (reusing the pause path to render without updating). The 7 s countdown is real time. The test build forces it once; the log showed 210 game frames over the 420 real frames of the effect (`slowmo start/end` lines). Sound and animation tied to `frame` slow down with it.
+
+## Shop grid: what the shipped data actually contains
+There is no shop-grid `.uiscreen` in 1.104.2 (none of the 471 screens is named shop/store; `TheStash` is the gadget screen with `titleBarPlain` / `buttonBack`). `Configs/shop/default_1.json` lists only storefront categories (special/event bundles, coin packs, vehicle bundles, vehicle skins) and `itemGroups_1.json` the bundle items: these are real-money IAP offers whose grid the native code builds at runtime, so there is no layout file to port. The port's gadget shop therefore stays modelled on `TheStash` (done earlier); a bundle/IAP grid would have no purchasable content offline.
