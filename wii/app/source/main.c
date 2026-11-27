@@ -375,6 +375,16 @@ static void mechQuad(Spr *s, int vt, float x, float yb, float h, int f) {   /* h
     float va = r * (float)fh / VEH[vt].ph, vb = (r + 1) * (float)fh / VEH[vt].ph;
     quad(s, x, yb - h, h * fw / fh, h, c * (float)fw / VEH[vt].pw, mflip ? vb : va, (c + 1) * (float)fw / VEH[vt].pw, mflip ? va : vb);
 }
+#ifdef AUTOTEST
+#define PKLOG(...) do { char pp_[128]; snprintf(pp_, sizeof pp_, "%sdbg.txt", dir); FILE *df_ = fopen(pp_, "a"); if (df_) { fprintf(df_, __VA_ARGS__); fputc('\n', df_); fclose(df_); } } while (0)
+#else
+#define PKLOG(...) do {} while (0)
+#endif
+#ifdef AUTOTEST
+#define PKFIRST 40   /* test builds: first pickup early so Dolphin runs see it */
+#else
+#define PKFIRST 300
+#endif
 #define DIST(sc) ((int)((sc) / 27.f))
 /* Configs/game_mode_rules/classic_1.json: start_velocity 175, end_velocity 480 (units/s of the 480x320 game frame), velocity_stop_distance 2250 m.
    x1.5 to our screen, /60 per frame. The file gives no curve, so the ramp is linear (my reading). */
@@ -452,7 +462,7 @@ static void missionCheck(int ending, int dist, int coins, int toks, int veh, int
     if (ending || spent) saveMissions();
 }
 /* inv = 42: settings.xml IMMUNITY_TIME 700, read as milliseconds (42 frames at 60 fps; was 90) */
-#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 42; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; dvx = 4; slideT = 0; blastUsed = 0; blastWait = 0; sfx_play(sHurt, 0); } } while (0)
+#define HIT() do { if (inv) {} else if (mech == 2) { mech = 0; inv = 42; sfx_play(sVDie, 0); } else if (shield > 0) { shield--; inv = 42; sfx_play(sVDie, 0); } else if (!dead && state == 1) { dead = 60; dvx = 4; slideT = 0; blastUsed = 0; blastWait = 0; sfx_play(sHurt, 0); } } while (0)
 
 int main(int argc, char **argv) {
     gfxInit(); int fatOk = fatInitDefault();
@@ -491,6 +501,9 @@ int main(int argc, char **argv) {
     Spr mechS[16] = {{0}}; int haveV[16], nV = 0, vt = 0, jl = 0, gd = 1, tt = 0; for (int i = 0; i < 16; i++) haveV[i] = loadSpr(&mechS[i], VEH[i].spr);
     int paused = 0, mech = 0, inv = 0, bf = 0, wasHeld = 0, mkwait = 600; float mpick = -999;   /* mech: 0 none, 2 riding */
     Spr pbk = {0}, pic[3] = {{0}, {0}, {0}}; int havePause = loadSpr(&pbk, "pbk.spr") && loadSpr(&pic[0], "pq.spr") && loadSpr(&pic[1], "pr.spr") && loadSpr(&pic[2], "pg.spr"), psel = 2, doRestart = 0, tsel = 0, inShop = 0, shopI = 0; Spr popS = {0}; int havePop = loadSpr(&popS, "popup.spr");   /* menus/popupBacking behind the game-over text */
+    /* in-run pickups, Configs/pickups: manager_1 (first at 300 m, then every 500 m + 0-500 random, equal weights 25), level 1 of each:
+       Shield numHits 1; Boost 100 m at speed 2000 (slowing over the last 30 m); Coin Special 300 coins over 60 m. Slow Motion needs mission level 5 and is not done. */
+    Spr pkS[3] = {{0}}; int havePk = loadSpr(&pkS[0], "pkcoin.spr") && loadSpr(&pkS[1], "pkboost.spr") && loadSpr(&pkS[2], "pkshield.spr"), pkOn = 0, pkKind = 0, pkNext = PKFIRST, shield = 0; float pkX = 0, pkY = 0, boostPx = 0, cspPx = 0, cspAcc = 0;
     Spr tokS = {0}; int haveTok = loadSpr(&tokS, "tok.spr"), tokOn = 0, tokWait = 400, tokGot = 0, tokFirst = 300, tokLast = 0, tokKm = 0, tokInKm = 0, tokStep = 0, spinsLeft = 0, spinAnim = 0, spinShow = 0, spinPrize = 0, spinWins = 0; float tokX = 0, tokY = 0, tokTY = 0;   /* spin token: RewardSystem/Tokens/pickup.png; how often and what it pays is mine */
     Spr dogS = {0}; int haveDog = loadSpr(&dogS, "rdog.spr");   /* Robot Dog art: robodog-alt, row 2 is the 4-frame trot */
     Spr colH = {0}, colB = {0}, boomS = {0}; int haveCol = loadSpr(&colH, "colh.spr") && loadSpr(&colB, "colb.spr") && loadSpr(&boomS, "boom.spr"), boomOn = 0, zDud = 0, zapDudLeft = 0, bossHp = 3, bossCd = 0, bossKills = 0, boomDone = 0, boomHit = 0, newBest = 0;
@@ -553,7 +566,7 @@ int main(int argc, char **argv) {
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; dead = 0; mech = 0; inv = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
               if (fromMenu && gHS > 0) { gHS--; scroll = 750 * 27.f; inv = 120; writeSave(best, total); missionEvent(M_USEHS, 1); }   /* Head Start: skip the first 750 m (the item text); 2 s of cover is mine */
               int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
 #if AUTOTEST == 2
@@ -565,6 +578,7 @@ int main(int argc, char **argv) {
             goto render;
         }
         spd = runSpeed(dist);
+        if (boostPx > 0) { float full = 2000.f * 1.5f / 60.f; spd = boostPx > 810 ? full : spd + (full - spd) * boostPx / 810.f; boostPx -= spd; inv = inv > 2 ? inv : 2; }
         { int held = (btnHeld() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_BUTTON_1 | WPAD_BUTTON_2)) != 0;
           if (mech == 2 && vt == 4) {   /* Teleporter: hovers; a press vanishes (invulnerable) and reappears at a random height */
               vy = 0;
@@ -651,6 +665,17 @@ int main(int argc, char **argv) {
                 if (gTM && hypotf(tokX - 95, tokY - (y + 45)) < 200) { tokX += (95 - tokX) * 0.12f; tokY += (y + 45 - tokY) * 0.12f; }   /* Token Magnet pulls it in */
                 if (hypotf(tokX + 20 - 95, tokY + 20 - (y + 45)) < 44) { tokOn = 0; tokGot++; runTok++; if (gBM) scroll += 270; sfx_play(sC3, 0); }   /* Boost Machine: a token also carries you 10 m ahead (my reading) */
                 else if (tokX < -60) tokOn = 0;
+            }
+            if (havePk) {
+                if (!pkOn && dist >= pkNext) { pkOn = 1; pkKind = rand() % 3; pkX = W + 40; pkY = 120 + rand() % (H - 300); pkNext = dist + 500 + rand() % 500; PKLOG("pickup spawn kind %d dist %d next %d", pkKind, dist, pkNext); }
+                if (pkOn) {
+                    pkX -= spd;
+                    if (hypotf(pkX + 32 - 95, pkY + 16 - (y + 45)) < 50) {
+                        pkOn = 0; sfx_play(sC3, 0);
+                        PKLOG("pickup got kind %d dist %d score %d", pkKind, dist, score); if (pkKind == 0) { cspPx = 60 * 27; cspAcc = 0; } else if (pkKind == 1) boostPx = 100 * 27; else shield = 1;
+                    } else if (pkX < -80) pkOn = 0;
+                }
+                if (cspPx > 0) { cspAcc += 300.f * spd / (60 * 27); cspPx -= spd; score += (int)cspAcc; cspAcc -= (int)cspAcc; }
             }
         }
         if (haveSci && state == 1) {
@@ -769,6 +794,8 @@ int main(int argc, char **argv) {
             quad(&emit, zx - hx - 16, zy - hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
             quad(&emit, zx + hx - 16, zy + hy - 20, 32, 40, 0, 0, 64.f / 64, 85.f / 88);
         }
+        if (pkOn && havePk && state == 1) quad(&pkS[pkKind], pkX, pkY, 64, 32, 0, 0, 1, 1);
+        if (shield > 0 && havePk && state == 1) quad(&pkS[2], 70, y - 20, 48, 24, 0, 0, 1, 1);
         if (tokOn && haveTok && state == 1) { float k = 36 + 4 * sinf(frame * 0.2f); quad(&tokS, tokX + 20 - k / 2, tokY + 20 - k / 2, k, k, 0, 0, 1, 1); }
         if (haveSci && state == 1) for (int i = 0; i < MAXS; i++) if (sci[i].on) {
             Spr *b = &sciS[sci[i].kind * 2], *hd = &sciS[sci[i].kind * 2 + 1]; float gy = H - 121 + 14, x = sci[i].x;

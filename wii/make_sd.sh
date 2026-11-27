@@ -10,7 +10,7 @@ A=$1; P=$2; S=$3; O=$4; T="$(cd "$(dirname "$0")" && pwd)/tools"
 [ -d "$A/xml" ] && [ -d "$P" ] && [ -d "$S" ] && [ -n "$O" ] || { sed -n 2,8p "$0"; exit 1; }
 mkdir -p "$O"; spr() { python3 -I "$T/mkspr.py" "$@"; }
 V=$P/textures/Characters/Vehicles
-spr "$S/Barry.png" "$O/barry.spr";  spr "$S/CoinAlt.png" "$O/coin.spr"
+spr "$S/pickupCoinSpecial.png" "$O/pkcoin.spr"; spr "$S/pickupBoost.png" "$O/pkboost.spr"; spr "$S/pickupShield.png" "$O/pkshield.spr"; spr "$S/Barry.png" "$O/barry.spr";  spr "$S/CoinAlt.png" "$O/coin.spr"
 spr "$S/laserWarning.png" "$O/beam.spr";  spr "$S/laser.png" "$O/emit.spr" 0 0 64 85
 spr "$S/missile.png" "$O/missile.spr";  spr "$S/missileAlert.png" "$O/alert.spr" 0 0 256 64
 spr "$P/textures/Entities/zapEffects.png" "$O/bolt.spr"
