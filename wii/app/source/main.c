@@ -111,21 +111,34 @@ static void gfxInit(void) {
 }
 
 #define MAXC 8192
-static float cx[MAXC], cy[MAXC]; static u8 cgot[MAXC]; static int nc; static float patW;
-
-static void loadPattern(void) {   /* '1' cells become coins; '=' starts the next chained pattern at a random height */
+/* coins: pattern templates from pattern.txt ('=' separates the game's coinPattern files), spawned one per coin event (Level::SetupNextSpawner) into a pool in world
+   (scroll) coordinates: cgot 0 = on screen path, 2 = free slot */
+#define MAXT 40
+static float cx[MAXC], cy[MAXC]; static u8 cgot[MAXC]; static int nc;
+static float tcx[MAXC], tcy[MAXC]; static int tStart[MAXT + 1], ntm; static float tW[MAXT];
+static void loadPattern(void) {   /* '1' cells become template coins */
     char pp[128]; snprintf(pp, sizeof pp, "%spattern.txt", dir);
-    FILE *f = fopen(pp, "r"); char ln[256]; int row = 0; float xoff = 0, yoff = 60; if (!f) return;
+    FILE *f = fopen(pp, "r"); char ln[256]; int row = 0, n = 0; if (!f) return;
     while (fgets(ln, sizeof ln, f)) {
-        if (ln[0] == '=') { xoff = patW + 350; yoff = 40 + rand() % 130; row = 0; continue; }
-        if (ln[0] == '\n' || ln[0] == '\r') continue;
+        if (ln[0] == '=') { if (ntm >= MAXT - 1) break; tStart[ntm] = n; tW[ntm] = 0; ntm++; row = 0; continue; }
+        if (ln[0] == '\n' || ln[0] == '\r' || !ntm) continue;
         for (int c = 0; ln[c] && ln[c] != '\n' && ln[c] != '\r'; c++) {
-            if (ln[c] == '1' && nc < MAXC) { cx[nc] = xoff + c * 20.f; cy[nc] = yoff + row * 22.f; nc++; }
-            if (xoff + c * 20.f + 20 > patW) patW = xoff + c * 20.f + 20;
+            if (ln[c] == '1' && n < MAXC) { tcx[n] = c * 20.f; tcy[n] = row * 22.f; n++; }
+            if (c * 20.f + 20 > tW[ntm - 1]) tW[ntm - 1] = c * 20.f + 20;
         }
         row++;
     }
-    fclose(f);
+    tStart[ntm] = n; fclose(f);
+}
+static float spawnCoins(float scroll) {   /* one random template at the right edge, at a random height; returns its width */
+    if (!ntm) return 0;
+    int t = rand() % ntm; float yo = 40 + rand() % 130, x0 = scroll + 640 + 60;
+    for (int k = tStart[t]; k < tStart[t + 1]; k++) {
+        int i = 0; while (i < nc && cgot[i] != 2) i++;
+        if (i >= MAXC) break; if (i == nc) nc++;
+        cx[i] = x0 + tcx[k]; cy[i] = yo + tcy[k]; cgot[i] = 0;
+    }
+    return tW[t];
 }
 
 #define MAXP 40
@@ -520,7 +533,7 @@ int main(int argc, char **argv) {
     float evAt = -1; int evL = 0, evM = 0, evZ = 0;   /* spawn events (Level::SetupNextSpawner): one roll picks a coin pattern, laser, missile or gate */
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
-    else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
+    else if (!ntm) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
     Spr dimS = {0}; dimSpr(&dimS);
     Spr tbS = {0}; int haveTb = loadSpr(&tbS, "tb.spr");   /* Pause.uiscreen PauseHeaderBacking: textures/menus/paused/titleBar, 128 high across the top */
     Spr hazS = {0}; int haveHaz = loadSpr(&hazS, "hz.spr");   /* TitleScreen mainMenu.hazzardStrip: textures/menus/backings/hazzardTile */
@@ -601,7 +614,7 @@ int main(int argc, char **argv) {
 #else
             nextBoss = 1500;
 #endif
-            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; evAt = -1; evL = evM = evZ = 0; dead = 0; mech = 0; inv = 0; slowT = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
+            cur = -1; wait = 90; mst = 0; mwait = 120; zi = -1; zwait = 150; evAt = -1; evL = evM = evZ = 0; nc = 0; dead = 0; mech = 0; inv = 0; slowT = 0; pkOn = 0; pkNext = PKFIRST; shield = 0; boostPx = 0; cspPx = 0; mpick = -999; mkwait = gXR ? 300 : 600; { int fromMenu = state == 0; state = 1; dvx = 0; slidePx = 0; blastUsed = 0; blastWait = 0; if (fromMenu) missionEvent(M_START, 1);
               if (next500) { next500 = 0; scroll = 500 * 27.f; inv = 120; }   /* a Final Spin win: Start 500 m, for the next run */
               if (fromMenu && gHS > 0) { gHS--; scroll = 750 * 27.f; inv = 120; writeSave(best, total); missionEvent(M_USEHS, 1); }   /* Head Start: skip the first 750 m (the item text); 2 s of cover is mine */
               int anyG = 0; for (int g = 0; g < NSHOP; g++) anyG |= *shopOwn[g]; if (anyG) missionEvent(M_USEP, 1); }
@@ -693,7 +706,7 @@ int main(int argc, char **argv) {
                 float wl = (!riding && boostPx <= 0 && zi < 0 && mst == 0 && cur < 0) ? laserProb(dist) : 0, tot = wc + wl + wm + wg, ext = 0;
                 evL = evM = evZ = 0;
                 if (tot > 0) { float r = tot * (rand() / (RAND_MAX + 1.f));
-                    if (r < wc) PKLOG("event coin dist %d", dist);
+                    if (r < wc) { ext = spawnCoins(scroll) / spd; PKLOG("event coin dist %d width %d", dist, (int)(ext * spd)); }
                     else if (r < wc + wl) { evL = 1; ext = 240; PKLOG("event laser dist %d", dist); }
                     else if (r < wc + wl + wm) { evM = 1; ext = 150; PKLOG("event missile dist %d", dist); }
                     else { evZ = 1; ext = 150; PKLOG("event gate dist %d", dist); } }
@@ -836,8 +849,8 @@ int main(int argc, char **argv) {
         if (state == 0 && haveTitle) quad(&titleS, 0, 0, W, H, 0, 0, 1, 1); else drawLevel(scroll);
         if (haveAlarm && !(state == 0 && haveTitle)) eachAlarm(scroll, drawAlarmCb, &frame);
         if (haveC) for (int i = 0; i < nc; i++) {
-            float px = cx[i] + 700 - fmodf(scroll, patW + 700 + 640); if (px < -20 || px > W || cgot[i]) { if (px < -20) cgot[i] = 0; continue; }
-            if ((gDog && cy[i] > H - 170 && px < 140 && px + 16 > 20) || (gMagnet && hypotf(px + 8 - 95, cy[i] + 8 - (y + 45)) < 130) || (gVMag && mech == 2 && hypotf(px + 8 - 95, cy[i] + 8 - (y + 50)) < 190) || (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90)) { cgot[i] = 1; score += gMul ? 2 : 1; sfx_play(rand() % 3 == 0 ? sC2 : rand() & 1 ? sC3 : sCoin, 0); continue; }
+            if (cgot[i] == 2) continue; float px = cx[i] - scroll; if (px < -20) { cgot[i] = 2; continue; } if (px > W) continue;
+            if ((gDog && cy[i] > H - 170 && px < 140 && px + 16 > 20) || (gMagnet && hypotf(px + 8 - 95, cy[i] + 8 - (y + 45)) < 130) || (gVMag && mech == 2 && hypotf(px + 8 - 95, cy[i] + 8 - (y + 50)) < 190) || (px < 130 && px + 16 > 60 && cy[i] + 16 > y && cy[i] < y + 90)) { cgot[i] = 2; score += gMul ? 2 : 1; sfx_play(rand() % 3 == 0 ? sC2 : rand() & 1 ? sC3 : sCoin, 0); continue; }
             int fr = (frame / 4 + i) & 7; quad(&coin, px, cy[i], 16, 16, fr / 8.f, 0, (fr + 1) / 8.f, 1);
         }
         if (zi >= 0) {
