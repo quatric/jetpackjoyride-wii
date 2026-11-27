@@ -15,6 +15,7 @@ def main(scr, pngdir, out):
     for i, (x, y, w, h) in vr.items():
         c = cs[i]; p = c['props']; cl = c['class']
         if w <= 0 or h <= 0 or w > 4000 or h > 4000: continue
+        if 'notch' in str(c['id']).lower() or 'iphonex' in str(c['id']).lower() or 'blocker' in str(c['id']).lower(): continue   # device-shape guides and input blockers
         t = p.get('texture'); t = t[0] if isinstance(t, list) else t
         if isinstance(t, str) and t:
             f = os.path.join(pngdir, t.replace('\\', '/').lower().replace('.tex', '.png'))
