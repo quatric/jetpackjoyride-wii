@@ -712,7 +712,7 @@ int main(int argc, char **argv) {
                 float wl = (!riding && boostPx <= 0 && zi < 0 && mst == 0 && cur < 0) ? laserProb(dist) : 0, tot = wc + wl + wm + wg, ext = 0;
                 evL = evM = evZ = 0;
                 if (tot > 0) { float r = tot * (rand() / (RAND_MAX + 1.f));
-                    if (r < wc) { ext = spawnCoins(scroll, dist - rideD0, riding && cvOn) / spd; PKLOG("event coin dist %d width %d", dist, (int)(ext * spd)); }
+                    if (r < wc) { ext = spawnCoins(scroll, dist - rideD0, riding && cvOn) / spd; PKLOG("event coin dist %d width %d cv %d ridden %d", dist, (int)(ext * spd), riding && cvOn, dist - rideD0); }
                     else if (r < wc + wl) { evL = 1; ext = 240; PKLOG("event laser dist %d", dist); }
                     else if (r < wc + wl + wm) { evM = 1; ext = 150; PKLOG("event missile dist %d", dist); }
                     else { evZ = 1; ext = 150; PKLOG("event gate dist %d", dist); } }
