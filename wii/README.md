@@ -520,3 +520,5 @@ The game-over screen now follows the decoded `ResultsScreen_New`: two halves of 
 ## Pause header
 
 `Pause.uiscreen` puts a 128-high header (`PauseHeaderBacking`: three `menus/paused/titleBar` pieces, left/middle/right) across the top with the title "PAUSED" in the middle, the score and gadgets on the left and buttons on the right. The pause screen now draws the three pieces and moves "PAUSED" into the bar. The score/gadgets/buttons are not moved into it, the dim backing (`black.tex`) is not drawn, and the HUD text still overlaps the bar's left end. Checked in Dolphin.
+
+The pause screen now also dims the game behind it (a generated translucent black quad standing in for `black.tex`, as `BlackBacking` does). Checked in Dolphin.

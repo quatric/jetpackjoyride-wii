@@ -57,6 +57,10 @@ static u32 btnHeld(void) {
 #endif
 }
 
+static void dimSpr(Spr *s) {   /* translucent black 4x4 for the pause backing (Pause.uiscreen BlackBacking) */
+    u8 *d = memalign(32, 64); memset(d, 0, 64); for (int i = 0; i < 32; i += 2) d[i] = 150;
+    DCFlushRange(d, 64); s->data = d; s->w = s->h = 4; GX_InitTexObj(&s->obj, d, 4, 4, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+}
 static void fallbackSpr(Spr *s) {   /* magenta 4x4 so a missing asset is visible */
     u8 *d = memalign(32, 64); for (int i = 0; i < 32; i += 2) { d[i] = 255; d[i + 1] = 255; d[32 + i] = 0; d[33 + i] = 255; }
     DCFlushRange(d, 64); s->data = d; s->w = s->h = 4; GX_InitTexObj(&s->obj, d, 4, 4, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -476,6 +480,7 @@ int main(int argc, char **argv) {
     int cur = -1, ptick = 0, wait = 90, dead = 0, mst = 0, mtick = 0, mwait = 120; float my = 0, mx = 0;   /* mst: 0 idle, 1 alert, 2 flying */
     if (!fatOk) GX_SetCopyClear((GXColor){160, 0, 0, 255}, GX_MAX_Z24);          /* red: no SD */
     else if (!nc) GX_SetCopyClear((GXColor){160, 120, 0, 255}, GX_MAX_Z24);    /* amber: assets missing */
+    Spr dimS = {0}; dimSpr(&dimS);
     Spr tbS = {0}; int haveTb = loadSpr(&tbS, "tb.spr");   /* Pause.uiscreen PauseHeaderBacking: textures/menus/paused/titleBar, 128 high across the top */
     Spr hazS = {0}; int haveHaz = loadSpr(&hazS, "hz.spr");   /* TitleScreen mainMenu.hazzardStrip: textures/menus/backings/hazzardTile */
     Spr logoT = {0}, logoB = {0}; int haveLogo = loadSpr(&logoT, "logot.spr") && loadSpr(&logoB, "logob.spr");
@@ -856,6 +861,7 @@ int main(int argc, char **argv) {
             } else if ((frame / 30) & 1) { if (state == 2 && !spinning) { quad(&pbk, 340, 380, 280, 80, 0, 0, 1, 1); } } drawText(state == 2 ? 372 : W / 2 - 170, state == 2 ? 410 : 300, state == 2 ? 0.7f : 0.9f, spinning ? (spinsLeft && !spinAnim ? "PRESS A TO SPIN" : "") : "A  PLAY AGAIN");
         }
         if (paused && havePause) {
+            quad(&dimS, 0, 0, W, H, 0, 0, 1, 1);
             if (haveTb) for (int k = 0; k < 3; k++) quad(&tbS, k * W / 3.f, 0, W / 3.f + 1, 96, 0, 0, 1, 1);
             static const char *const lab[3] = {"QUIT", "RETRY", "RESUME"};
             for (int i = 0; i < 3; i++) {
